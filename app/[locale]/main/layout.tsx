@@ -40,9 +40,9 @@ function MainLayoutContent({
       <AppSidebarLayout
         navMain={routes as NavMainItem[]}
         user={{
-          name: user.user_metadata?.name,
-          email: user.email as string,
-          avatar: user.user_metadata?.avatar_url,
+          name: user?.user_metadata?.name,
+          email: user?.email as string,
+          avatar: user?.user_metadata?.avatar_url,
         }}
         onLogout={signOut}
         onNavItemClick={handleNavItemClick}

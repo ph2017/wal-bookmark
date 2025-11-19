@@ -1,9 +1,14 @@
 "use client"
 
-import { Settings2, SquareTerminal, PanelsTopLeft, Wallet } from "lucide-react"
+import { Settings2, SquareTerminal, PanelsTopLeft, Wallet, FileArchive } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 export const routes = [
+  {
+    title: "Blobs",
+    url: "/main/blob",
+    icon: FileArchive,
+  },
   {
     title: "Dashboard",
     url: "/main/dashboard",
@@ -11,7 +16,7 @@ export const routes = [
   },
   {
     title: "MyProjects",
-    url: "/main/my-projects",
+  url: "/main/my-projects",
     icon: PanelsTopLeft,
   }
 ]
