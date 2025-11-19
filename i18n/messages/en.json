@@ -136,5 +136,9 @@
   "PrivacyPolicy": {
     "title": "Privacy Policy",
     "description": "Privacy Policy"
+  },
+  "Login": {
+    "title": "Login",
+    "description": "Login to your account"
   }
 }
