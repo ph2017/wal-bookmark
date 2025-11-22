@@ -11,8 +11,8 @@ export const getDomain = (url: string) => {
     const urlWithProtocol = url.startsWith('http') ? url : `https://${url}`;
     const domain = new URL(urlWithProtocol).hostname;
     // Remove 'www.' prefix if exists
-    return domain.replace(/^www\./, '');
-  } catch (error) {
+    return domain.replace(/^www\./, "");
+  } catch {
     // Return original input if URL parsing fails
     return url;
   }

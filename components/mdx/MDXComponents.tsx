@@ -2,6 +2,7 @@ import { Aside } from "@/components/mdx/Aside";
 import { Callout } from "@/components/mdx/Callout";
 import { MdxCard } from "@/components/mdx/MdxCard";
 import React, { ReactNode } from "react";
+import Image from "next/image";
 
 interface HeadingProps {
   level: 1 | 2 | 3 | 4 | 5 | 6;
@@ -20,11 +21,9 @@ const Heading: React.FC<HeadingProps> = ({ level, className, children }) => {
   );
 };
 
-interface MDXComponentsProps {
-  [key: string]: React.FC<any>;
-}
+type MDXComponent = React.FC<React.PropsWithChildren<any>>;
 
-const MDXComponents: MDXComponentsProps = {
+const MDXComponents: { [key: string]: MDXComponent } = {
   h1: (props) => (
     <Heading level={1} className="text-4xl font-bold mt-8 mb-6" {...props} />
   ),
@@ -93,7 +92,13 @@ const MDXComponents: MDXComponentsProps = {
     />
   ),
   img: (props) => (
-    <img className="rounded-lg border-2 border-gray-200 my-6" {...props} />
+    <Image
+      className="rounded-lg border-2 border-gray-200 my-6"
+      {...props}
+      alt={props.alt || ""}
+      width={props.width || 800}
+      height={props.height || 600}
+    />
   ),
   strong: (props) => <strong className="font-bold" {...props} />,
   table: (props) => (

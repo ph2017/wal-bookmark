@@ -1,6 +1,7 @@
 "use client";
 import { AppHeader } from "@/components/biz/AppHeader";
-import { useNetworkVariable } from "@/networkConfig";
+import { AddressDisplay } from "@/components/biz/AddressDisplay";
+import { networkConfig } from "@/networkConfig";
 import { useSuiClient } from "@mysten/dapp-kit";
 import {
   Button,
@@ -11,8 +12,9 @@ import {
   Tag,
   Tooltip,
   App,
+  Card as AntdCard,
 } from "antd";
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -20,35 +22,36 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { StarOutlined, StarFilled, StarTwoTone } from "@ant-design/icons";
+import { StarOutlined, StarFilled } from "@ant-design/icons";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from 'next/navigation';
 import { WalrusEpochInfo } from "@/components/walrus/WalrusEpochInfo";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useNetwork } from "@/components/provider/network-context";
+import { convertToWalrusBlobId } from "@/lib/blob";
+
+// 格式化文件大小为可读性强的格式
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
 
 function BlobPageContent() {
+  const searchParams = useSearchParams();
   const { message } = App.useApp();
-  const walrusBlobType = useNetworkVariable("walrusBlobType");
+  const { currentNetwork } = useNetwork();
+  const walrusBlobType = (networkConfig[currentNetwork] as any).variables.walrusBlobType;
   const client = useSuiClient();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [blobData, setBlobData] = useState<any>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [currentEpoch, setCurrentEpoch] = useState<number>(0);
-  const [networkType, setNetworkType] = useState<"testnet" | "mainnet">(
-    "testnet"
-  );
-  const currentAccount = useCurrentAccount();
-
-  // 格式化文件大小为可读性强的格式
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
 
   // 计算过期时间
   const calculateEndTime = (endEpoch: number): string => {
@@ -64,11 +67,19 @@ function BlobPageContent() {
         epochDuration: 14 * 24 * 60 * 60, // 14天
         epoch1StartTimestamp: 1742865600, // March 25, 2025 12:00:00 UTC
       },
+      devnet: {
+        epochDuration: 24 * 60 * 60, // 1天
+        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60, // 假设devnet epoch 1从昨天开始
+      },
+      localnet: {
+        epochDuration: 24 * 60 * 60, // 1天
+        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60, // 假设localnet epoch 1从昨天开始
+      },
     };
 
-    const config = NETWORK_CONFIGS[networkType];
+    const config = NETWORK_CONFIGS[currentNetwork];
 
-    if (networkType === "testnet") {
+    if (currentNetwork === "testnet") {
       // 测试网：基于当前时间计算epoch边界（UTC天边界）
       const currentTime = Math.floor(Date.now() / 1000);
       const currentEpochStartTime =
@@ -89,36 +100,32 @@ function BlobPageContent() {
   };
 
   const checkBookmarkStatus = async (objectId: string) => {
-    if (!currentAccount) return;
-
     try {
-      const response = await fetch(
-        `/api/bookmark?objectId=${objectId}&objectType=${walrusBlobType}`
-      );
+      const response = await fetch(`/api/bookmark?objectId=${objectId}`);
       if (response.ok) {
-        const data = await response.json();
-        setIsBookmarked(data.data?.length > 0);
+        const res = await response.json();
+        debugger;
+        setIsBookmarked(res.data?.data?.length > 0);
       }
     } catch (error) {
       console.error("Failed to check bookmark status:", error);
     }
   };
 
+  const [isProcessing, setIsProcessing] = useState(false);
   const toggleBookmark = async () => {
-    if (!currentAccount || !blobData) return;
-
-    const objectId = blobData.fields?.id?.id;
+    const objectId = blobData.objectId;
     if (!objectId) return;
-
+    if (isProcessing) return;
     try {
+      setIsProcessing(true);
       if (isBookmarked) {
         // Remove bookmark
-        const response = await fetch("/api/bookmark", {
+        const response = await fetch(`/api/bookmark?objectId=${objectId}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ objectId }),
         });
 
         if (response.ok) {
@@ -136,7 +143,10 @@ function BlobPageContent() {
           },
           body: JSON.stringify({
             objectId,
-            objectType: walrusBlobType,
+            walletAddress: blobData.owner?.AddressOwner,
+            startEpoch: blobData.content?.fields?.storage?.fields?.start_epoch,
+            endEpoch: blobData.content?.fields?.storage?.fields?.end_epoch,
+            netType: currentNetwork,
           }),
         });
 
@@ -149,6 +159,8 @@ function BlobPageContent() {
       }
     } catch (error) {
       message.error("Failed to update bookmark");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -158,7 +170,7 @@ function BlobPageContent() {
     try {
       const object = await client.getObject({
         id: values.objectId,
-        options: { showContent: true, showType: true },
+        options: { showContent: true, showType: true, showOwner: true },
       });
 
       if (object.data?.type !== walrusBlobType) {
@@ -166,7 +178,7 @@ function BlobPageContent() {
         return;
       }
       form.setFieldsValue({ objectId: "" });
-      setBlobData(object.data?.content);
+      setBlobData(object.data);
 
       // Check if this object is bookmarked
       await checkBookmarkStatus(values.objectId);
@@ -182,10 +194,7 @@ function BlobPageContent() {
       <AppHeader breadcrumbs={[{ label: "Blob Viewer" }]} className="" />
       <div className="flex-1 overflow-auto px-4 py-2 box-border">
         <div className="mb-4">
-          <WalrusEpochInfo
-            onEpochChange={setCurrentEpoch}
-            onNetworkChange={setNetworkType}
-          />
+          <WalrusEpochInfo onEpochChange={setCurrentEpoch} />
         </div>
         <Card>
           <CardHeader>
@@ -193,35 +202,34 @@ function BlobPageContent() {
               <CardTitle>Search Sui object then add to bookmark</CardTitle>
               {/* <CardDescription>Error loading epoch data</CardDescription> */}
               <Badge
-                variant={networkType === "mainnet" ? "default" : "secondary"}
+                variant={currentNetwork === "mainnet" ? "default" : "secondary"}
                 className="text-xs"
               >
-                {networkType === "mainnet" ? "Mainnet" : "Testnet"}
+                {currentNetwork === "mainnet" ? "Mainnet" : "Testnet"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-
-          <Form form={form} onFinish={onFinish} layout="inline">
-            <Form.Item
-              label="Sui Object ID"
-              name="objectId"
-              rules={[
-                { required: true, message: "Please input the object ID" },
-              ]}
-            >
-              <Input
-                placeholder="Enter Sui Object ID"
-                className="w-[500px]"
-                allowClear
-              />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                Search
-              </Button>
-            </Form.Item>
-          </Form>
+            <Form form={form} onFinish={onFinish} layout="inline">
+              <Form.Item
+                label="Sui Object ID"
+                name="objectId"
+                rules={[
+                  { required: true, message: "Please input the object ID" },
+                ]}
+              >
+                <Input
+                  placeholder="Enter Sui Object ID"
+                  className="w-[500px]"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit" loading={loading}>
+                  Search
+                </Button>
+              </Form.Item>
+            </Form>
           </CardContent>
         </Card>
 
@@ -232,11 +240,11 @@ function BlobPageContent() {
         )}
 
         {blobData && (
-          <Card className="mt-4" title="Blob Object Details">
+          <AntdCard className="mt-4" title="Blob Object Details">
             <Descriptions bordered column={2}>
               <Descriptions.Item label="Object ID">
                 <div className="flex items-center gap-2">
-                  <span>{blobData.fields?.id?.id}</span>
+                  <AddressDisplay address={blobData.objectId || ''} network={currentNetwork} />
                   {!isBookmarked && (
                     <Tooltip title="Add to Bookmark">
                       <StarOutlined
@@ -257,52 +265,63 @@ function BlobPageContent() {
                   )}
                 </div>
               </Descriptions.Item>
+              <Descriptions.Item label="Owner">
+                {blobData.owner ? (
+                  <AddressDisplay address={blobData.owner?.AddressOwner || ''} network={currentNetwork} />
+                ) : (
+                  <span className="text-gray-500">Unknown</span>
+                )}
+              </Descriptions.Item>
               <Descriptions.Item label="Type">
-                <Tag color="blue">{blobData.type}</Tag>
+                <Tag color="blue">{blobData.content?.type}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Size">
                 <div className="flex items-center gap-2">
-                  <span>{formatFileSize(blobData.fields?.size)}</span>
+                  <span>{formatFileSize(blobData.content?.fields?.size)}</span>
                   <span className="text-gray-500 text-sm">
-                    ({blobData.fields?.size.toLocaleString()} bytes)
+                    ({blobData.content?.fields?.size.toLocaleString()} bytes)
                   </span>
                 </div>
               </Descriptions.Item>
               <Descriptions.Item label="Blob ID">
-                {blobData.fields?.blob_id}
+                <div className="flex items-center gap-2">
+                  <AddressDisplay address={convertToWalrusBlobId(blobData.content.fields.blob_id)} network={currentNetwork} isBlobId={true} />
+                </div>
               </Descriptions.Item>
               {/* <Descriptions.Item label="Encoding Type">
-                {blobData.fields?.encoding_type}
+                {blobData.content?.fields?.encoding_type}
               </Descriptions.Item> */}
               <Descriptions.Item label="Registered Epoch">
-                {blobData.fields?.registered_epoch}
+                {blobData.content?.fields?.registered_epoch}
               </Descriptions.Item>
               <Descriptions.Item label="Certified Epoch">
-                {blobData.fields?.certified_epoch}
+                {blobData.content?.fields?.certified_epoch}
               </Descriptions.Item>
               <Descriptions.Item label="Start Epoch">
-                {blobData.fields?.storage?.fields?.start_epoch}
+                {blobData.content?.fields?.storage?.fields?.start_epoch}
               </Descriptions.Item>
               <Descriptions.Item label="End Epoch">
-                {blobData.fields?.storage?.fields?.end_epoch}
+                {blobData.content?.fields?.storage?.fields?.end_epoch}
               </Descriptions.Item>
               <Descriptions.Item label="Status">
                 <Tag
                   color={
                     currentEpoch <
-                    (blobData.fields?.storage?.fields?.end_epoch || 0)
+                    (blobData.content?.fields?.storage?.fields?.end_epoch || 0)
                       ? "green"
                       : "red"
                   }
                 >
                   {currentEpoch <
-                  (blobData.fields?.storage?.fields?.end_epoch || 0)
+                  (blobData.content?.fields?.storage?.fields?.end_epoch || 0)
                     ? "Valid"
                     : "Invalid"}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="End Time">
-                {calculateEndTime(blobData.fields?.storage?.fields?.end_epoch)}
+                {calculateEndTime(
+                  blobData.content?.fields?.storage?.fields?.end_epoch
+                )}
               </Descriptions.Item>
               {/* <Descriptions.Item label="Storage">
                 {blobData.fields?.storage
@@ -315,7 +334,7 @@ function BlobPageContent() {
                 </pre>
               </Descriptions.Item> */}
             </Descriptions>
-          </Card>
+          </AntdCard>
         )}
       </div>
     </div>

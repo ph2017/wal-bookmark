@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { walrus } from '@mysten/walrus';
@@ -13,7 +13,10 @@ import { useNetwork } from '@/components/provider/network-context';
 
 interface EpochInfo {
   currentEpoch: number;
-  committee: any;
+  committee: {
+    epoch: number;
+    n_shards: number;
+  };
   totalShards: number;
   epochStartTime: number;
   epochEndTime: number;
@@ -49,7 +52,7 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
   const { currentNetwork } = useNetwork();
   const [epochInfo, setEpochInfo] = useState<EpochInfo>({
     currentEpoch: 0,
-    committee: null,
+    committee: { epoch: 0, n_shards: 0 },
     totalShards: 0,
     epochStartTime: 0,
     epochEndTime: 0,
@@ -71,9 +74,9 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
     return () => clearInterval(timer);
   }, []);
 
-  const fetchEpochInfo = async () => {
-    setEpochInfo(prev => ({ ...prev, loading: true, error: null }));
-    
+  const fetchEpochInfo = useCallback(async () => {
+    setEpochInfo((prev) => ({ ...prev, loading: true, error: null }));
+
     try {
       // Create Walrus client
       const client = new SuiJsonRpcClient({
@@ -83,25 +86,27 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
 
       // Get system state which includes epoch information
       const systemState = await client.walrus.systemState();
-      
+
       const currentTime = Math.floor(Date.now() / 1000);
       let epochStartTime: number;
       let epochEndTime: number;
-      
-      if (networkConfig.type === 'testnet') {
+
+      if (networkConfig.type === "testnet") {
         // Testnet: Calculate current epoch start time based on current time
         // Assume epoch boundaries align with UTC day boundaries for simplicity
-        const currentEpochStartTime = currentTime - (currentTime % networkConfig.epochDuration);
+        const currentEpochStartTime =
+          currentTime - (currentTime % networkConfig.epochDuration);
         epochStartTime = currentEpochStartTime;
         epochEndTime = epochStartTime + networkConfig.epochDuration;
       } else {
         // Mainnet: Calculate based on epoch 1 start timestamp
         const epoch1Start = networkConfig.epoch1StartTimestamp!;
         const epochsSinceStart = systemState.committee.epoch - 1;
-        epochStartTime = epoch1Start + (epochsSinceStart * networkConfig.epochDuration);
+        epochStartTime =
+          epoch1Start + epochsSinceStart * networkConfig.epochDuration;
         epochEndTime = epochStartTime + networkConfig.epochDuration;
       }
-      
+
       setEpochInfo({
         currentEpoch: systemState.committee.epoch,
         committee: systemState.committee,
@@ -123,8 +128,8 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
         onNetworkChange(networkConfig.type);
       }
 
-      console.log('systemState', systemState);
-      console.log('Epoch timing calculated:', {
+      console.log("systemState", systemState);
+      console.log("Epoch timing calculated:", {
         network: networkConfig.type,
         epoch: systemState.committee.epoch,
         epochStartTime: new Date(epochStartTime * 1000).toISOString(),
@@ -133,18 +138,21 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
         currentTime: new Date(currentTime * 1000).toISOString(),
       });
     } catch (error) {
-      console.error('Error fetching Walrus epochs:', error);
-      setEpochInfo(prev => ({
+      console.error("Error fetching Walrus epochs:", error);
+      setEpochInfo((prev) => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch epoch info',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch epoch info",
       }));
     }
-  };
+  }, [networkType, networkConfig, onEpochChange, onNetworkChange]);
 
   useEffect(() => {
     fetchEpochInfo();
-  }, [currentNetwork]); // 当网络变化时重新获取数据
+  }, [currentNetwork, fetchEpochInfo]); // 当网络变化时重新获取数据
 
   if (epochInfo.loading) {
     return (

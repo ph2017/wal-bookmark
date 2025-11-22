@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState } from "react"
 import { debounce } from "lodash"
 import {
   Dialog,
@@ -38,12 +38,9 @@ export function WithdrawDialog({
   const account = useCurrentAccount()
 
   // 使用 useCallback 和 debounce 处理输入
-  const debouncedSetSuiAmount = useCallback(
-    debounce((value: string) => {
-      setSuiAmount(value)
-    }, 500),
-    [],
-  )
+  const debouncedSetSuiAmount = debounce((value: string) => {
+    setSuiAmount(value)
+  }, 500)
 
   const suiClient = new SuiClient({
     url: getFullnodeUrl(
@@ -51,7 +48,7 @@ export function WithdrawDialog({
     ),
   })
   const { mutate: signAndExecute } = useSignAndExecuteTransaction({
-    execute: async ({ bytes, signature }: { bytes: any; signature: any }) =>
+    execute: async ({ bytes, signature }: { bytes: string; signature: string }) =>
       await suiClient.executeTransactionBlock({
         transactionBlock: bytes,
         signature,
@@ -149,11 +146,12 @@ export function WithdrawDialog({
           },
         },
       )
-    } catch (error: any) {
+    } catch (error) {
       console.error(error)
+      const errorMessage = error instanceof Error ? error.message : "Please try again later"
       toast({
         title: "Withdrawal failed",
-        description: error.message || "Please try again later",
+        description: errorMessage,
         variant: "destructive",
       })
     }

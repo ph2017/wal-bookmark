@@ -54,13 +54,13 @@ export function validateEmail(email: string): {
 
 // email validation (including alias detection)
 export function normalizeEmail(email: string): string {
-  if (!email) return '';
+  if (!email) return "";
 
   // convert to lowercase
-  let normalizedEmail = email.toLowerCase();
+  const normalizedEmail = email.toLowerCase();
 
   // separate email local part and domain part
-  const [localPart, domain] = normalizedEmail.split('@');
+  const [localPart, domain] = normalizedEmail.split("@");
 
   // handle different email service provider alias rules
   switch (domain) {
