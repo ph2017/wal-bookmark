@@ -21,8 +21,8 @@ const Header = () => {
             <Image
               alt={siteConfig.name}
               src="/bookmark-logo.png"
-              width={36}
-              height={36}
+              width={24}
+              height={24}
             />
             <span className="text-gray-800 dark:text-gray-200">
               {t("title")}

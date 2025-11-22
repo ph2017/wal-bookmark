@@ -43,8 +43,8 @@ export default function MobileMenu() {
                 alt={t("title")}
                 src="/bookmark-logo.png"
                 className="w-6 h-6"
-                width={32}
-                height={32}
+                width={24}
+                height={24}
               />
               <span className="highlight-text">{t("title")}</span>
             </I18nLink>

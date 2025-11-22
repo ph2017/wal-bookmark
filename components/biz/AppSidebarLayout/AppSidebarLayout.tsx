@@ -38,9 +38,9 @@ export function AppSidebarLayout({
                 <Link href="/">
                   <div className="flex aspect-square size-10 items-center justify-start rounded-lg text-sidebar-primary-foreground">
                     <Logo
-                      width={30}
-                      height={30}
-                      className="sm:w-[36px] sm:h-[36px] text-purple-500 "
+                      width={24}
+                      height={24}
+                      className="sm:w-[30px] sm:h-[30px] text-purple-500 "
                     />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
