@@ -14,7 +14,8 @@
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
     "@mysten/dapp-kit": "^0.16.0",
-    "@mysten/sui": "^1.28.2",
+    "@mysten/sui": "^1.44.0",
+    "@mysten/walrus": "^0.8.4",
     "@naviprotocol/lending": "^1.0.6",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
