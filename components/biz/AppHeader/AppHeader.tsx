@@ -13,6 +13,7 @@ import type { AppHeaderProps } from "./interface"
 import React from "react"
 import Link from "next/link"
 import { ConnectButton } from "@mysten/dapp-kit"
+import { NetworkSelector } from "@/components/biz/NetworkSelector"
 
 export function AppHeader({
   className,
@@ -55,7 +56,11 @@ export function AppHeader({
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <ConnectButton className="bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-lg px-4 py-2 hover:opacity-90 transition-opacity" />
+      
+      <div className="flex items-center gap-2 px-4">
+        <NetworkSelector className="bg-gray-100 dark:bg-gray-800" />
+        <ConnectButton className="bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-lg px-4 py-2 hover:opacity-90 transition-opacity" />
+      </div>
     </header>
   )
 }

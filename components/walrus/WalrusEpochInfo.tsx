@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Descriptions } from 'antd';
 import { RefreshCw } from 'lucide-react';
+import { useNetwork } from '@/components/provider/network-context';
 
 interface EpochInfo {
   currentEpoch: number;
@@ -45,6 +46,7 @@ const NETWORK_CONFIGS: Record<string, NetworkConfig> = {
 };
 
 export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochInfoProps) {
+  const { currentNetwork } = useNetwork();
   const [epochInfo, setEpochInfo] = useState<EpochInfo>({
     currentEpoch: 0,
     committee: null,
@@ -56,8 +58,8 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
     error: null,
   });
   
-  // Network configuration - can be made configurable via props or environment
-  const networkType = 'testnet'; // Change this to 'mainnet' for mainnet
+  // Network configuration - now uses currentNetwork from context
+  const networkType = currentNetwork === 'mainnet' ? 'mainnet' : 'testnet';
   const networkConfig = NETWORK_CONFIGS[networkType];
   
   // Timer to update time remaining
@@ -142,7 +144,7 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
 
   useEffect(() => {
     fetchEpochInfo();
-  }, []);
+  }, [currentNetwork]); // 当网络变化时重新获取数据
 
   if (epochInfo.loading) {
     return (
@@ -180,7 +182,12 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle>Walrus Epoch Information</CardTitle>
+            <div className="flex items-center gap-2 mb-2">
+              <CardTitle>Walrus Epoch Information</CardTitle>
+              <Badge variant={networkType === 'mainnet' ? 'default' : 'secondary'} className="text-xs">
+                {networkType === 'mainnet' ? 'Mainnet' : 'Testnet'}
+              </Badge>
+            </div>
             <CardDescription>Current system state on Walrus {networkConfig.type === 'testnet' ? 'Testnet' : 'Mainnet'}</CardDescription>
           </div>
           <Button
