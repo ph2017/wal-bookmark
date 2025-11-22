@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { CreateProjectInput, UpdateProjectInput, Project, ApiResponse } from '../types'
+import { CreateProjectInput, UpdateProjectInput, Project, ApiResponse } from './types'
 
 // 获取 Supabase 客户端
 const getSupabaseClient = () => {

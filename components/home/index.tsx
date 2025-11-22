@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Bookmark, Edit3, Database, Shield, Zap } from "lucide-react";
+import { Search, Bookmark, Edit3, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 

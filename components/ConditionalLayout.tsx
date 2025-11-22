@@ -5,7 +5,7 @@ import { LanguageDetectionAlert } from "@/components/LanguageDetectionAlert";
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
-  messages: any;
+  messages: Record<string, unknown>;
   header: React.ReactNode;
   footer: React.ReactNode;
 }

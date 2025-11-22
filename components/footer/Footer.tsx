@@ -1,18 +1,10 @@
-import BuiltWithButton from "@/components/BuiltWithButton";
-import { Newsletter } from "@/components/footer/Newsletter";
-import { TwitterX } from "@/components/social-icons/icons";
+
 import { siteConfig } from "@/config/site";
 import { Link as I18nLink } from "@/i18n/routing";
 import { FooterLink } from "@/types/common";
-import { GithubIcon, MailIcon } from "lucide-react";
-import { getMessages, getTranslations } from "next-intl/server";
-import Link from "next/link";
-import { SiBluesky, SiDiscord } from "react-icons/si";
+import { getTranslations } from "next-intl/server";
 
 export default async function Footer() {
-  const messages = await getMessages();
-
-  const t = await getTranslations("Home");
   const tFooter = await getTranslations("Footer");
 
   const footerLinks: FooterLink[] = tFooter.raw("Links.groups");

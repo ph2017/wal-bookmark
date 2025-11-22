@@ -2,11 +2,38 @@ import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { walrus } from "@mysten/walrus";
 
+interface CommitteeMember {
+  public_key: { bytes: number[] };
+  weight: number;
+  node_id: string;
+}
+
+interface Committee {
+  members: CommitteeMember[];
+  n_shards: number;
+  epoch: number;
+  total_aggregated_key: { bytes: number[] };
+}
+
+interface SystemState {
+  committee: Committee;
+  total_capacity_size: string;
+  used_capacity_size: string;
+  staked_capacity_size?: string;
+  allocated_capacity_size?: string;
+  current_epoch_reward?: string;
+  deny_list_object_id?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  deny_list_sizes?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
 export interface WalrusEpochData {
   epoch: number;
-  committee: any;
+  committee: Committee;
   n_shards: number;
-  systemState: any;
+  systemState: SystemState;
 }
 
 export async function getWalrusEpochs(
@@ -51,9 +78,7 @@ export async function getEpochCommitteeInfo(
   return {
     currentEpoch: epochData.epoch,
     totalShards: epochData.n_shards,
-    committeeMembers: epochData.committee?.voting_power
-      ? Object.keys(epochData.committee.voting_power).length
-      : 0,
+    committeeMembers: epochData.committee?.members?.length || 0,
     committee: epochData.committee,
   };
 }

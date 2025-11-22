@@ -20,7 +20,7 @@ export function NetworkSelector({ onNetworkChange, className }: NetworkSelectorP
       setCurrentNetwork(savedNetwork)
       onNetworkChange?.(savedNetwork)
     }
-  }, [])
+  }, [onNetworkChange])
 
   const handleNetworkChange = (network: Network) => {
     setCurrentNetwork(network)

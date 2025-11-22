@@ -32,7 +32,7 @@ const WebsiteLogo = ({
   ];
 
   useEffect(() => {
-    let timeoutId: any;
+    let timeoutId: NodeJS.Timeout;
 
     if (isLoading) {
       timeoutId = setTimeout(() => {

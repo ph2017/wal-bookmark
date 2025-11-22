@@ -35,7 +35,7 @@ export function AppSidebarLayout({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <Link href="/home">
+                <Link href="/">
                   <div className="flex aspect-square size-10 items-center justify-start rounded-lg text-sidebar-primary-foreground">
                     <Logo
                       width={30}

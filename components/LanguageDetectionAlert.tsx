@@ -73,6 +73,7 @@ export function LanguageDetectionAlert() {
 
   if (!showLanguageAlert || !detectedLocale) return null;
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const messages = require(`@/i18n/messages/${detectedLocale}.json`);
   const alertMessages = messages.LanguageDetection;
 
@@ -117,7 +118,7 @@ export function LanguageDetectionAlert() {
               <I18nLink
                 href="/"
                 title={`${alertMessages.switchTo} ${LOCALE_NAMES[detectedLocale]}`}
-                locale={detectedLocale as any}
+                locale={detectedLocale as 'en' | 'zh'}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg",
                   "bg-primary text-primary-foreground hover:bg-primary/90",

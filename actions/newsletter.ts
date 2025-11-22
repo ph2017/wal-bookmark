@@ -5,7 +5,14 @@ import { headers } from 'next/headers';
 import { Resend } from 'resend';
 
 // initialize resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | null = null;
+try {
+  if (process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+} catch (error) {
+  console.warn('Failed to initialize Resend client:', error);
+}
 
 // Resend Audience ID
 const AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID!;
@@ -48,6 +55,10 @@ export async function subscribeToNewsletter(email: string) {
 
     if (!isValid) {
       throw new Error(error || 'Invalid email address');
+    }
+
+    if (!resend) {
+      throw new Error('Newsletter service is not configured');
     }
 
     // Check if already subscribed
@@ -103,6 +114,10 @@ export async function unsubscribeFromNewsletter(token: string) {
       throw new Error(error || 'Invalid email address');
     }
 
+    if (!resend) {
+      throw new Error('Newsletter service is not configured');
+    }
+
     // Check if subscribed
     const list = await resend.contacts.list({ audienceId: AUDIENCE_ID });
     const user = list.data?.data.find((item) => item.email === normalizedEmail);
@@ -122,4 +137,4 @@ export async function unsubscribeFromNewsletter(token: string) {
     console.error('Newsletter unsubscribe failed:', error);
     throw error;
   }
-} 
+}

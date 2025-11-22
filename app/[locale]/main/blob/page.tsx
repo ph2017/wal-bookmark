@@ -40,10 +40,12 @@ const formatFileSize = (bytes: number): string => {
 function BlobPageContent() {
   const { message } = App.useApp();
   const { currentNetwork } = useNetwork();
-  const walrusBlobType = (networkConfig[currentNetwork] as any).variables.walrusBlobType;
+  // @ts-expect-error 网络配置中的变量类型需要动态访问
+  const walrusBlobType = (networkConfig[currentNetwork]).variables.walrusBlobType;
   const client = useSuiClient();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [blobData, setBlobData] = useState<any>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [currentEpoch, setCurrentEpoch] = useState<number>(0);
