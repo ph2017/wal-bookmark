@@ -45,10 +45,10 @@ export function AppSidebarLayout({
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <div className="truncate font-semibold inline-block bg-clip-text">
-                      Wal0
+                      wal-bookmark
                     </div>
                     <div className="truncate text-primary/50 text-[11px]">
-                      Website Code Generator
+                      Collect your walrus blobs
                     </div>
                   </div>
                 </Link>

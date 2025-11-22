@@ -44,6 +44,7 @@ export interface BookmarkFilters {
   end_epoch?: number
   net_type?: 'testnet' | 'mainnet'
   user_id: string
+  remark?: string
 }
 
 // 分页参数

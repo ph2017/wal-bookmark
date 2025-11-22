@@ -13,16 +13,6 @@ export const routes = [
     title: "Bookmarks",
     url: "/main/bookmarks",
     icon: Star,
-  },
-  {
-    title: "Dashboard",
-    url: "/main/dashboard",
-    icon: SquareTerminal,
-  },
-  {
-    title: "MyProjects",
-  url: "/main/my-projects",
-    icon: PanelsTopLeft,
   }
 ]
 

@@ -28,7 +28,7 @@ export function AntdConfigProvider({ children }: AntdConfigProviderProps) {
     algorithm,
     token: {
       // 主色调
-      colorPrimary: '#3b82f6',
+      colorPrimary: '#8b5cf6',
       // 圆角
       borderRadius: 6,
       // 字体

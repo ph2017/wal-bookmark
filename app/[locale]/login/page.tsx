@@ -10,14 +10,12 @@ import { useTranslations } from 'next-intl'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const t = useTranslations('Login')
   const supabase = createClient()
 
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true)
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/api/auth/callback`,
@@ -61,7 +59,7 @@ export default function LoginPage() {
             </Button>
           </div>
         </div>
-        <div className="text-center">
+        {/* <div className="text-center">
           <p className="text-sm text-gray-600">
             登录即表示您同意我们的{' '}
             <a href="/terms-of-service" className="font-medium text-indigo-600 hover:text-indigo-500">
@@ -72,7 +70,7 @@ export default function LoginPage() {
               隐私政策
             </a>
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   )

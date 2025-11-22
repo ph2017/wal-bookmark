@@ -59,7 +59,17 @@ export function AppHeader({
       
       <div className="flex items-center gap-2 px-4">
         <NetworkSelector className="bg-gray-100 dark:bg-gray-800" />
-        <ConnectButton className="bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-lg px-4 py-2 hover:opacity-90 transition-opacity" />
+        <ConnectButton 
+          style={{ 
+            backgroundColor: '#8b5cf6', 
+            color: 'white', 
+            borderRadius: '0.5rem',
+            padding: '0.5rem 1rem',
+            opacity: 0.9,
+            transition: 'opacity 0.2s'
+          }}
+          className="hover:opacity-100"
+        />
       </div>
     </header>
   )

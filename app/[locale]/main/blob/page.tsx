@@ -18,17 +18,14 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { StarOutlined, StarFilled } from "@ant-design/icons";
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import { WalrusEpochInfo } from "@/components/walrus/WalrusEpochInfo";
 import { useNetwork } from "@/components/provider/network-context";
-import { convertToWalrusBlobId } from "@/lib/blob";
 
 // 格式化文件大小为可读性强的格式
 const formatFileSize = (bytes: number): string => {
@@ -42,7 +39,6 @@ const formatFileSize = (bytes: number): string => {
 };
 
 function BlobPageContent() {
-  const searchParams = useSearchParams();
   const { message } = App.useApp();
   const { currentNetwork } = useNetwork();
   const walrusBlobType = (networkConfig[currentNetwork] as any).variables.walrusBlobType;
@@ -159,6 +155,7 @@ function BlobPageContent() {
       }
     } catch (error) {
       message.error("Failed to update bookmark");
+      console.error("Failed to update bookmark:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -184,6 +181,7 @@ function BlobPageContent() {
       await checkBookmarkStatus(values.objectId);
     } catch (error) {
       message.error("Failed to fetch blob data");
+      console.error("Failed to fetch blob data:", error);
     } finally {
       setLoading(false);
     }
@@ -283,11 +281,11 @@ function BlobPageContent() {
                   </span>
                 </div>
               </Descriptions.Item>
-              <Descriptions.Item label="Blob ID">
+              {/* <Descriptions.Item label="Blob ID">
                 <div className="flex items-center gap-2">
-                  <AddressDisplay address={convertToWalrusBlobId(blobData.content.fields.blob_id)} network={currentNetwork} isBlobId={true} />
+                  {blobData.content?.fields?.blob_id}
                 </div>
-              </Descriptions.Item>
+              </Descriptions.Item> */}
               {/* <Descriptions.Item label="Encoding Type">
                 {blobData.content?.fields?.encoding_type}
               </Descriptions.Item> */}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserBookmarks, BookmarkFilters, PaginationParams, createBookmark, deleteBookmark } from '@/lib/supabase/bookmark'
+import { getUserBookmarks, BookmarkFilters, PaginationParams, createBookmark, deleteBookmark, updateBookmark } from '@/lib/supabase/bookmark'
 import { createClient } from '@/utils/supbase/server'
 
 export async function GET(request: NextRequest) {
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const end_epoch = searchParams.get('endEpoch') ? parseInt(searchParams.get('endEpoch')!) : undefined
     const owner = searchParams.get('owner') || user.email // 默认使用当前用户email
     const net_type = searchParams.get('netType') as 'testnet' | 'mainnet' | undefined
+    const remark = searchParams.get('remark') || undefined
     const user_id = user.id || ''
     
     const filters: BookmarkFilters = {
@@ -37,7 +38,8 @@ export async function GET(request: NextRequest) {
       end_epoch,
       owner,
       net_type,
-      user_id
+      user_id,
+      remark
     }
     
     // 构建分页参数 - 将前端的camelCase转换为数据库的snake_case
@@ -183,6 +185,56 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('删除书签API错误:', error)
+    const message = error instanceof Error ? error.message : '服务器处理请求失败'
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    // 获取当前用户会话
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: '用户未认证' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { remark, remark_images, object_id, id } = body
+
+    if (!object_id || !id) {
+      return NextResponse.json(
+        { error: '缺少必要参数' },
+        { status: 400 }
+      )
+    }
+
+    const result = await updateBookmark(id, user.id || '',{
+      remark,
+      remark_images,
+    })
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || '更新书签失败' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data
+    })
+
+  } catch (error) {
+    console.error('更新书签API错误:', error)
     const message = error instanceof Error ? error.message : '服务器处理请求失败'
     return NextResponse.json(
       { error: message },

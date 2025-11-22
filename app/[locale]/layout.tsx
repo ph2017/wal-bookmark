@@ -4,7 +4,6 @@ import GoogleAnalytics from "@/app/GoogleAnalytics";
 import PlausibleAnalytics from "@/app/PlausibleAnalytics";
 import Footer from "@/components/footer/Footer";
 import Header from "@/components/header/Header";
-import { LanguageDetectionAlert } from "@/components/LanguageDetectionAlert";
 import { TailwindIndicator } from "@/components/TailwindIndicator";
 import { siteConfig } from "@/config/site";
 import { DEFAULT_LOCALE, Locale, routing } from "@/i18n/routing";

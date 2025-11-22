@@ -1,19 +1,19 @@
-import { createClient } from '@supabase/supabase-js'
-import { Bookmark, CreateBookmarkInput, ApiResponse } from './types'
-import { getAdminClient } from '../admin-client'
+import { createClient } from "@supabase/supabase-js";
+import { Bookmark, CreateBookmarkInput, ApiResponse } from "./types";
+import { getAdminClient } from "../admin-client";
 
 // 获取 Supabase 客户端
 const getSupabaseClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   return createClient(supabaseUrl, supabaseKey, {
     auth: {
       persistSession: true, // This will persist the session in cookies
       autoRefreshToken: true, // Automatically refresh the token
-      debug: true
-    }
-  })
-}
+      // debug: true,
+    },
+  });
+};
 
 /**
  * 创建新书签
@@ -25,19 +25,19 @@ export async function createBookmark(
   input: CreateBookmarkInput
 ): Promise<ApiResponse<Bookmark>> {
   try {
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseClient();
 
-    console.log('创建书签输入:', input)
+    console.log("创建书签输入:", input);
     // 确保user_id字段不为空
     if (!input.user_id) {
       return {
         success: false,
-        error: '缺少用户ID'
-      }
+        error: "缺少用户ID",
+      };
     }
-    
+
     const { data, error } = await supabase
-      .from('bookmark')
+      .from("bookmark")
       .insert([
         {
           object_id: input.object_id,
@@ -46,32 +46,32 @@ export async function createBookmark(
           remark: input.remark,
           remark_images: input.remark_images,
           owner: input.owner,
-          net_type: input.net_type || 'testnet',
-          wallet_address: input.wallet_address || '',
-          user_id: input.user_id || ''
-        }
+          net_type: input.net_type || "testnet",
+          wallet_address: input.wallet_address || "",
+          user_id: input.user_id || "",
+        },
       ])
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error('创建书签失败:', error)
+      console.error("创建书签失败:", error);
       return {
         success: false,
-        error: error.message
-      }
+        error: error.message,
+      };
     }
 
     return {
       success: true,
-      data: data as Bookmark
-    }
+      data: data as Bookmark,
+    };
   } catch (error) {
-    console.error('创建书签异常:', error)
+    console.error("创建书签异常:", error);
     return {
       success: false,
-      error: '创建书签时发生未知错误'
-    }
+      error: "创建书签时发生未知错误",
+    };
   }
 }
 
@@ -89,54 +89,54 @@ export async function updateBookmark(
 ): Promise<ApiResponse<Bookmark>> {
   try {
     const supabase = getSupabaseClient(); // 使用管理客户端绕过RLS
-    
+
     // 首先检查书签是否存在且用户有权限修改
     const { data: existingBookmark, error: fetchError } = await supabase
-      .from('bookmark')
-      .select('owner')
-      .eq('id', bookmarkId)
-      .single()
+      .from("bookmark")
+      .select("owner, user_id")
+      .eq("id", bookmarkId)
+      .single();
 
     if (fetchError) {
       return {
         success: false,
-        error: '书签不存在'
-      }
+        error: "书签不存在",
+      };
     }
 
     // 检查权限（只有创建者可以修改）
-    if (existingBookmark.owner !== userId) {
+    if (existingBookmark.user_id !== userId) {
       return {
         success: false,
-        error: '没有权限修改此书签'
-      }
+        error: "没有权限修改此书签",
+      };
     }
 
     const { data, error } = await supabase
-      .from('bookmark')
+      .from("bookmark")
       .update(updateData)
-      .eq('id', bookmarkId)
+      .eq("id", bookmarkId)
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error('更新书签失败:', error)
+      console.error("更新书签失败:", error);
       return {
         success: false,
-        error: error.message
-      }
+        error: error.message,
+      };
     }
 
     return {
       success: true,
-      data: data as Bookmark
-    }
+      data: data as Bookmark,
+    };
   } catch (error) {
-    console.error('更新书签异常:', error)
+    console.error("更新书签异常:", error);
     return {
       success: false,
-      error: '更新书签时发生未知错误'
-    }
+      error: "更新书签时发生未知错误",
+    };
   }
 }
 
@@ -153,69 +153,70 @@ export async function deleteBookmark(
   userId: string
 ): Promise<ApiResponse<null>> {
   try {
-    const supabase = getSupabaseClient()
-    
+    const supabase = getSupabaseClient();
+
     // 首先检查书签是否存在且属于该用户
     const { data: existingBookmark, error: checkError } = await supabase
-      .from('bookmark')
-      .select('owner, user_id')
-      .eq('object_id', objectId)
-      .eq('owner', owner)
-      .single()
-    
-      console.log('查询书签结果:', existingBookmark)
+      .from("bookmark")
+      .select("owner, user_id, object_id")
+      .eq("object_id", objectId)
+      .eq("owner", owner)
+      .single();
+
+    console.log("查询书签结果:", existingBookmark);
 
     if (checkError) {
       return {
         success: false,
-        error: checkError.message
-      }
+        error: checkError.message,
+      };
     }
 
     // 检查权限（只有创建者可以删除）
     if (existingBookmark.user_id !== userId) {
       return {
         success: false,
-        error: '没有权限删除此书签'
-      }
+        error: "没有权限删除此书签",
+      };
     }
 
     const { error, data: deletedData } = await supabase
-      .from('bookmark')
+      .from("bookmark")
       .delete()
-      .eq('object_id', objectId)
-      .eq('owner', owner)
-      .select() // 返回被删除的行
-    
-      console.log('删除书签结果:', deletedData?.length || 0)
-      console.log('error:', error)
+      .eq("object_id", objectId)
+      .eq("owner", owner)
+      .eq("user_id", userId)
+      .select(); // 返回被删除的行
+
+    // console.log('删除书签结果:', deletedData?.length || 0)
+    console.log("error:", error);
 
     if (error) {
-      console.error('删除书签失败:', error)
+      console.error("删除书签失败:", error);
       return {
         success: false,
-        error: error.message
-      }
+        error: error.message,
+      };
     }
-    
-    // 检查是否实际删除了数据
-    if (!deletedData || deletedData.length === 0) {
-      return {
-        success: false,
-        error: '未找到要删除的书签'
-      }
-    }
+
+    // // 检查是否实际删除了数据
+    // if (!deletedData || deletedData.length === 0) {
+    //   return {
+    //     success: false,
+    //     error: '未找到要删除的书签'
+    //   }
+    // }
 
     return {
       success: true,
-      data: null
-    }
+      data: null,
+    };
   } catch (error) {
-    console.error('删除书签异常:', error)
+    console.error("删除书签异常:", error);
     return {
       success: false,
-      error: '删除书签时发生未知错误'
-    }
+      error: "删除书签时发生未知错误",
+    };
   }
 }
 
@@ -230,57 +231,56 @@ export async function batchDeleteBookmarks(
   userId: string
 ): Promise<ApiResponse<number>> {
   try {
-    const supabase = getSupabaseClient() // 使用管理客户端
-    
+    const supabase = getSupabaseClient(); // 使用管理客户端
+
     // 检查所有书签的权限
     const { data: existingBookmarks, error: fetchError } = await supabase
-      .from('bookmark')
-      .select('id, owner')
-      .in('id', bookmarkIds)
+      .from("bookmark")
+      .select("id, owner")
+      .in("id", bookmarkIds);
 
     if (fetchError) {
       return {
         success: false,
-        error: '获取书签信息失败'
-      }
+        error: "获取书签信息失败",
+      };
     }
 
     // 检查权限（只能删除自己的书签）
-    const unauthorizedBookmarks = existingBookmarks?.filter(
-      bookmark => bookmark.owner !== userId
-    ) || []
+    const unauthorizedBookmarks =
+      existingBookmarks?.filter((bookmark) => bookmark.owner !== userId) || [];
 
     if (unauthorizedBookmarks.length > 0) {
       return {
         success: false,
-        error: '没有权限删除部分书签'
-      }
+        error: "没有权限删除部分书签",
+      };
     }
 
     const { error, data: deletedData } = await supabase
-      .from('bookmark')
+      .from("bookmark")
       .delete()
-      .in('id', bookmarkIds)
-      .eq('owner', userId)
-      .select() // 返回被删除的行
+      .in("id", bookmarkIds)
+      .eq("owner", userId)
+      .select(); // 返回被删除的行
 
     if (error) {
-      console.error('批量删除书签失败:', error)
+      console.error("批量删除书签失败:", error);
       return {
         success: false,
-        error: error.message
-      }
+        error: error.message,
+      };
     }
 
     return {
       success: true,
-      data: deletedData?.length || 0
-    }
+      data: deletedData?.length || 0,
+    };
   } catch (error) {
-    console.error('批量删除书签异常:', error)
+    console.error("批量删除书签异常:", error);
     return {
       success: false,
-      error: '批量删除书签时发生未知错误'
-    }
+      error: "批量删除书签时发生未知错误",
+    };
   }
 }

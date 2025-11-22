@@ -106,6 +106,9 @@ export async function getUserBookmarks(
       if (filters.net_type) {
         query = query.eq('net_type', filters.net_type)
       }
+      if (filters.remark) {
+        query = query.ilike('remark', `%${filters.remark}%`)
+      }
     }
 
     // 应用排序
