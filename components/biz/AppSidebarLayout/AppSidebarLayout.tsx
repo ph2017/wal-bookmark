@@ -40,7 +40,7 @@ export function AppSidebarLayout({
                     <Logo
                       width={30}
                       height={30}
-                      className="sm:w-[50px] sm:h-[50px] text-purple-500 "
+                      className="sm:w-[36px] sm:h-[36px] text-purple-500 "
                     />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">

@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Bookmark, CreateBookmarkInput, ApiResponse } from "./types";
-import { getAdminClient } from "../admin-client";
+// import { getAdminClient } from "../admin-client";
 
 // 获取 Supabase 客户端
 const getSupabaseClient = () => {
@@ -199,13 +199,13 @@ export async function deleteBookmark(
       };
     }
 
-    // // 检查是否实际删除了数据
-    // if (!deletedData || deletedData.length === 0) {
-    //   return {
-    //     success: false,
-    //     error: '未找到要删除的书签'
-    //   }
-    // }
+    // 检查是否实际删除了数据
+    if (!deletedData || deletedData.length === 0) {
+      return {
+        success: false,
+        error: '未找到要删除的书签'
+      }
+    }
 
     return {
       success: true,

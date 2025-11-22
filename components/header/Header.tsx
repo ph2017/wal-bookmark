@@ -21,10 +21,9 @@ const Header = () => {
           >
             <Image
               alt={siteConfig.name}
-              src="/logo.svg"
-              className="w-6 h-6"
-              width={32}
-              height={32}
+              src="/bookmark-logo.png"
+              width={36}
+              height={36}
             />
             <span className="text-gray-800 dark:text-gray-200">
               {t("title")}
@@ -36,7 +35,7 @@ const Header = () => {
         <div className="flex items-center gap-x-2 md:gap-x-4 lg:gap-x-6 flex-1 justify-end">
           {/* PC */}
           <div className="hidden md:flex items-center gap-x-4">
-            <LocaleSwitcher />
+            {/* <LocaleSwitcher /> */}
             <ThemeToggle />
           </div>
 

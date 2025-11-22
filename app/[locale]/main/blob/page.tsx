@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/card";
 import { StarOutlined, StarFilled } from "@ant-design/icons";
 import { useState } from "react";
-import { useSearchParams } from 'next/navigation';
 import { WalrusEpochInfo } from "@/components/walrus/WalrusEpochInfo";
 import { useNetwork } from "@/components/provider/network-context";
 

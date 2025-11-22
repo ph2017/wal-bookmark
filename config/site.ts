@@ -12,7 +12,7 @@ const GITHUB_URL = 'https://github.com/weijunext'
 const DISCORD_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL
 
 export const siteConfig: SiteConfig = {
-  name: "Next Forge",
+  name: "wal-bookmark",
   tagLine: 'Multilingual Next.js 15 Starter',
   description:
     "A multilingual Next.js 15 starter with built-in i18n support. Launch your global-ready web application with a clean, efficient, and SEO-friendly foundation.",

@@ -21,7 +21,7 @@ export async function generateMetadata({
   params,
 }: MetadataProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  let { posts }: { posts: BlogPost[] } = await getPosts(locale);
+  const { posts }: { posts: BlogPost[] } = await getPosts(locale);
   const post = posts.find((post) => post.slug === "/" + slug);
 
   if (!post) {
@@ -48,7 +48,7 @@ export async function generateMetadata({
 
 export default async function BlogPage({ params }: { params: Params }) {
   const { locale, slug } = await params;
-  let { posts }: { posts: BlogPost[] } = await getPosts(locale);
+  const { posts }: { posts: BlogPost[] } = await getPosts(locale);
 
   const post = posts.find((item) => item.slug === "/" + slug);
 

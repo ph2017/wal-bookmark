@@ -10,8 +10,6 @@ import { redirect } from "next/navigation"
 import { useEffect } from "react"
 import { AppSidebarLayout } from "@/components/biz/AppSidebarLayout"
 import { type NavMainItem } from "@/components/biz/AppSidebarLayout/interface"
-import { WalletHeader } from "@/components/biz/WalletHeader"
-import { WalletProvider } from "@/components/provider/wallet-provider"
 import Providers from "@/components/provider/sui-provider"
 
 // create a internal component to use context
@@ -29,7 +27,7 @@ function MainLayoutContent({
 
   // handle nav item click
   const handleNavItemClick = useCallback(
-    (url: string) => {
+    () => {
       return false
     },
     [],
@@ -47,10 +45,6 @@ function MainLayoutContent({
         onLogout={signOut}
         onNavItemClick={handleNavItemClick}
       >
-        {/* <WalletProvider>
-          <WalletHeader></WalletHeader>
-          {children}
-        </WalletProvider> */}
         {children}
       </AppSidebarLayout>
     </Providers>

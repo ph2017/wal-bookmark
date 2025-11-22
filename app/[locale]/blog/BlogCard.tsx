@@ -3,7 +3,7 @@ import { BlogPost } from "@/types/blog";
 import dayjs from "dayjs";
 import Image from "next/image";
 
-export function BlogCard({ post, locale }: { post: BlogPost; locale: string }) {
+export function BlogCard({ post }: { post: BlogPost; locale: string }) {
   return (
     <I18nLink
       href={`/blog${post.slug}`}

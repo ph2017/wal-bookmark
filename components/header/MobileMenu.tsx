@@ -41,7 +41,7 @@ export default function MobileMenu() {
             >
               <Image
                 alt={t("title")}
-                src="/logo.svg"
+                src="/bookmark-logo.png"
                 className="w-6 h-6"
                 width={32}
                 height={32}

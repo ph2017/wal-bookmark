@@ -35,7 +35,7 @@ export default function BookmarksPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
-  const [searchRemark, setSearchRemark] = useState("");
+  // const [searchRemark, setSearchRemark] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
 
   // Calculate end time - same method as blob page
@@ -125,17 +125,17 @@ export default function BookmarksPage() {
 
   const handleSearch = useCallback(async (values: { remark: string }) => {
     setSearchLoading(true);
-    setSearchRemark(values.remark);
+    // setSearchRemark(values.remark);
     await fetchBookmarks(values.remark);
     setSearchLoading(false);
   }, [fetchBookmarks]);
 
-  const handleSearchReset = useCallback(async () => {
-    setSearchRemark("");
-    setSearchLoading(true);
-    await fetchBookmarks();
-    setSearchLoading(false);
-  }, [fetchBookmarks]);
+  // const handleSearchReset = useCallback(async () => {
+  //   setSearchRemark("");
+  //   setSearchLoading(true);
+  //   await fetchBookmarks();
+  //   setSearchLoading(false);
+  // }, [fetchBookmarks]);
 
   const removeBookmark = async (objectId: string) => {
     try {

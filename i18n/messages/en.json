@@ -8,24 +8,8 @@
   "Header": {
     "links": [
       {
-        "name": "Blog",
-        "href": "/blog"
-      },
-      {
-        "name": "About",
-        "href": "/about"
-      },
-      {
-        "name": "Source Code",
-        "href": "https://github.com/weijunext/nextjs-15-starter",
-        "target": "_blank",
-        "rel": "noopener noreferrer nofollow"
-      },
-      {
-        "name": "Pro Version",
-        "href": "https://nexty.dev",
-        "target": "_blank",
-        "rel": "noopener noreferrer"
+        "name": "Get Start",
+        "href": "/main/blob"
       }
     ]
   },
@@ -116,10 +100,33 @@
     }
   },
   "Home": {
-    "title": "Next Forge",
-    "tagLine": "Multilingual Next.js 15 Starter",
-    "description": "A multilingual Next.js 15 starter with built-in i18n support. Launch your global-ready web application with a clean, efficient, and SEO-friendly foundation.",
-    "whoIsUsing": "Who is Using This Starter"
+    "title": "wal-bookmark",
+    "tagLine": "Professional Sui Blockchain Object Management Tool",
+    "description": "Search, bookmark, and manage your Sui objects with smart bookmark categorization and convenient editing features.",
+    "whoIsUsing": "Who is Using This Manager",
+    "heroTitle": "Walrus Blob",
+    "heroTitleHighlight": "Bookmark",
+    "heroSubtitle": "Manager",
+    "heroDescription": "Professional Sui blockchain object management tool. Search, bookmark, and manage your Sui objects, supporting smart bookmark categorization and convenient editing features.",
+    "startManagingBookmarks": "Start Managing Bookmarks",
+    "searchSuiObjects": "Search Sui Objects",
+    "coreFeatures": "Core Features",
+    "coreFeaturesSubtitle": "Object management solution designed specifically for Sui blockchain",
+    "smartSearch": "Smart Search",
+    "smartSearchDescription": "Quickly search for objects on the Sui blockchain with multiple filter conditions to help you accurately locate target objects.",
+    "bookmarkManagement": "Bookmark Management",
+    "bookmarkManagementDescription": "One-click to bookmark important objects, supporting categorized management and quick access for more organized object management.",
+    "convenientEditing": "Convenient Editing",
+    "convenientEditingDescription": "Support object information editing and note addition, custom tags and descriptions for more complete object information.",
+    "dataPersistence": "Data Persistence",
+    "dataPersistenceDescription": "Secure data storage based on Supabase ensures your bookmark data is safe, reliable, and accessible anytime, anywhere.",
+    "secureAndReliable": "Secure and Reliable",
+    "secureAndReliableDescription": "Adopts modern security standards to protect your data and privacy, allowing you to use all features with peace of mind.",
+    "highPerformance": "High Performance",
+    "highPerformanceDescription": "Built with Next.js 15 for fast search response and smooth user experience.",
+    "startManagingYourSuiObjects": "Start Managing Your Sui Objects",
+    "startManagingYourSuiObjectsSubtitle": "Experience professional Sui blockchain object management tools for simple and efficient object management",
+    "getStartedNow": "Get Started Now"
   },
   "Blog": {
     "title": "Blog Posts",
