@@ -1,8 +1,24 @@
 "use client";
 import { AppHeader } from "@/components/biz/AppHeader";
-import { Card, Table, Button, Spin, message, Tooltip, Modal, Input, Upload, Form } from "antd";
+import {
+  Card,
+  Table,
+  Button,
+  Spin,
+  Tooltip,
+  Modal,
+  Input,
+  Upload,
+  Form,
+  App,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { DeleteOutlined, EditOutlined, UploadOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  UploadOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,13 +36,13 @@ interface Bookmark {
   end_epoch?: number;
   remark?: string;
   remark_images?: string;
-  net_type?: 'testnet' | 'mainnet';
+  net_type?: "testnet" | "mainnet";
 }
 
 export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [loading, setLoading] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message: messageApi, modal } = App.useApp();
   const { user, loading: authLoading } = useAuth();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
@@ -35,107 +51,107 @@ export default function BookmarksPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
-  // const [searchRemark, setSearchRemark] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Calculate end time - same method as blob page
-  const calculateEndTime = (endEpoch: number, network: 'testnet' | 'mainnet' | undefined): string => {
+  const calculateEndTime = (
+    endEpoch: number,
+    network: "testnet" | "mainnet" | undefined
+  ): string => {
     if (!endEpoch) return "N/A";
 
-    // Network configuration constants
     const NETWORK_CONFIGS = {
       testnet: {
-        epochDuration: 24 * 60 * 60, // 1 day
-        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60, // Assume testnet epoch 1 started yesterday
+        epochDuration: 24 * 60 * 60,
+        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60,
       },
       mainnet: {
-        epochDuration: 14 * 24 * 60 * 60, // 14 days
-        epoch1StartTimestamp: 1742865600, // March 25, 2025 12:00:00 UTC
+        epochDuration: 14 * 24 * 60 * 60,
+        epoch1StartTimestamp: 1742865600,
       },
       devnet: {
-        epochDuration: 24 * 60 * 60, // 1 day
-        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60, // Assume devnet epoch 1 started yesterday
+        epochDuration: 24 * 60 * 60,
+        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60,
       },
       localnet: {
-        epochDuration: 24 * 60 * 60, // 1 day
-        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60, // Assume localnet epoch 1 started yesterday
+        epochDuration: 24 * 60 * 60,
+        epoch1StartTimestamp: Math.floor(Date.now() / 1000) - 24 * 60 * 60,
       },
     };
 
-    const currentNetwork = network || 'testnet';
+    const currentNetwork = network || "testnet";
     const config = NETWORK_CONFIGS[currentNetwork];
 
     if (currentNetwork === "testnet") {
-      // Testnet: Calculate epoch boundaries based on current time (UTC day boundaries)
       const currentTime = Math.floor(Date.now() / 1000);
-      const currentEpochStartTime = currentTime - (currentTime % config.epochDuration);
-      const targetEpochStartTime = currentEpochStartTime + (endEpoch - 1) * config.epochDuration;
+      const currentEpochStartTime =
+        currentTime - (currentTime % config.epochDuration);
+      const targetEpochStartTime =
+        currentEpochStartTime + (endEpoch - 1) * config.epochDuration;
       const endTime = new Date(targetEpochStartTime * 1000);
       return endTime.toISOString().replace("T", " ").slice(0, -5) + " UTC";
     } else {
-      // Mainnet: Calculate based on epoch 1 start time
       const epochsSinceStart = endEpoch - 1;
-      const epochStartTime = config.epoch1StartTimestamp + epochsSinceStart * config.epochDuration;
+      const epochStartTime =
+        config.epoch1StartTimestamp + epochsSinceStart * config.epochDuration;
       const endTime = new Date(epochStartTime * 1000);
       return endTime.toISOString().replace("T", " ").slice(0, -5) + " UTC";
     }
   };
 
-  const fetchBookmarks = useCallback(async (remarkFilter?: string) => {
-    if (!user) {
-      console.log('User not logged in, skipping bookmark fetch');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (remarkFilter) {
-        params.append('remark', remarkFilter);
+  const fetchBookmarks = useCallback(
+    async (remarkFilter?: string) => {
+      if (!user) {
+        console.log("User not logged in, skipping bookmark fetch");
+        return;
       }
-      
-      const response = await fetch(`/api/bookmark?${params.toString()}`);
-      if (!response.ok) {
-        if (response.status === 401) {
-          messageApi.error("Please login first");
-          return;
+
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (remarkFilter) {
+          params.append("remark", remarkFilter);
         }
-        throw new Error("Failed to fetch bookmarks");
-      }
-      const result = await response.json();
-      
-      // Check the returned data structure
-      if (result.success && result.data && Array.isArray(result.data.data)) {
-        setBookmarks(result.data.data.map((item: Bookmark) => ({
-          ...item,
-          endTime: calculateEndTime(item.end_epoch || 0, item.net_type),
-        })));
-      } else {
-        console.error('Invalid API response structure:', result);
+
+        const response = await fetch(`/api/bookmark?${params.toString()}`);
+        if (!response.ok) {
+          if (response.status === 401) {
+            messageApi.error("Please login first");
+            return;
+          }
+          throw new Error("Failed to fetch bookmarks");
+        }
+        const result = await response.json();
+
+        if (result.success && result.data && Array.isArray(result.data.data)) {
+          setBookmarks(
+            result.data.data.map((item: Bookmark) => ({
+              ...item,
+              endTime: calculateEndTime(item.end_epoch || 0, item.net_type),
+            }))
+          );
+        } else {
+          console.error("Invalid API response structure:", result);
+          setBookmarks([]);
+        }
+      } catch (error) {
+        console.error("Error fetching bookmarks:", error);
+        messageApi.error("Failed to fetch bookmarks");
         setBookmarks([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching bookmarks:', error);
-      messageApi.error("Failed to fetch bookmarks");
-      setBookmarks([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, messageApi]);
+    },
+    [user, messageApi]
+  );
 
-  const handleSearch = useCallback(async (values: { remark: string }) => {
-    setSearchLoading(true);
-    // setSearchRemark(values.remark);
-    await fetchBookmarks(values.remark);
-    setSearchLoading(false);
-  }, [fetchBookmarks]);
-
-  // const handleSearchReset = useCallback(async () => {
-  //   setSearchRemark("");
-  //   setSearchLoading(true);
-  //   await fetchBookmarks();
-  //   setSearchLoading(false);
-  // }, [fetchBookmarks]);
+  const handleSearch = useCallback(
+    async (values: { remark: string }) => {
+      setSearchLoading(true);
+      await fetchBookmarks(values.remark);
+      setSearchLoading(false);
+    },
+    [fetchBookmarks]
+  );
 
   const removeBookmark = async (objectId: string) => {
     try {
@@ -157,10 +173,24 @@ export default function BookmarksPage() {
     }
   };
 
+  const showDeleteConfirm = (objectId: string) => {
+    modal.confirm({
+      title: "Are you sure you want to delete this bookmark?",
+      icon: <DeleteOutlined />,
+      content: "This action cannot be undone.",
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: () => removeBookmark(objectId),
+    });
+  };
+
   const showEditModal = (bookmark: Bookmark) => {
     setEditingBookmark(bookmark);
     setEditRemark(bookmark.remark || "");
-    setEditImages(bookmark.remark_images ? bookmark.remark_images.split(",") : []);
+    setEditImages(
+      bookmark.remark_images ? bookmark.remark_images.split(",") : []
+    );
     setEditModalVisible(true);
   };
 
@@ -171,10 +201,12 @@ export default function BookmarksPage() {
     setEditImages([]);
   };
 
+  const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const handleEditSubmit = async () => {
     if (!editingBookmark) return;
 
     try {
+      setIsSubmitLoading(true);
       const response = await fetch("/api/bookmark", {
         method: "PUT",
         headers: {
@@ -197,6 +229,8 @@ export default function BookmarksPage() {
       fetchBookmarks();
     } catch {
       messageApi.error("Failed to update bookmark");
+    } finally {
+      setIsSubmitLoading(false);
     }
   };
 
@@ -220,9 +254,9 @@ export default function BookmarksPage() {
         throw error;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("bookmark-images")
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("bookmark-images").getPublicUrl(filePath);
 
       setEditImages([...editImages, publicUrl]);
       messageApi.success("Image uploaded successfully");
@@ -232,7 +266,7 @@ export default function BookmarksPage() {
       setUploadingImages(false);
     }
 
-    return false; // Prevent default upload behavior
+    return false;
   };
 
   const removeImage = (index: number) => {
@@ -265,7 +299,7 @@ export default function BookmarksPage() {
       width: 160,
       ellipsis: true,
       render: (text: string, record: Bookmark) => (
-        <AddressDisplay address={text} network={record.net_type || 'testnet'} />
+        <AddressDisplay address={text} network={record.net_type || "testnet"} />
       ),
     },
     {
@@ -273,21 +307,21 @@ export default function BookmarksPage() {
       dataIndex: "start_epoch",
       key: "start_epoch",
       width: 80,
-      render: (text?: number) => (text),
+      render: (text?: number) => text,
     },
     {
       title: "End Epoch",
       dataIndex: "end_epoch",
       key: "end_epoch",
       width: 80,
-      render: (text?: number) => (text),
+      render: (text?: number) => text,
     },
     {
       title: "End Time",
       dataIndex: "endTime",
       key: "endTime",
       width: 120,
-      render: (text?: number) => (text),
+      render: (text?: number) => text,
     },
     {
       title: "Remark",
@@ -309,10 +343,10 @@ export default function BookmarksPage() {
       width: 120,
       render: (text?: string) => {
         if (!text) return null;
-        
-        const imageUrls = text.split(",").filter(url => url.trim());
+
+        const imageUrls = text.split(",").filter((url) => url.trim());
         if (imageUrls.length === 0) return null;
-        
+
         return (
           <div className="flex flex-wrap gap-1">
             {imageUrls.slice(0, 3).map((url, index) => (
@@ -326,7 +360,9 @@ export default function BookmarksPage() {
               />
             ))}
             {imageUrls.length > 3 && (
-              <span className="text-xs text-gray-500 ml-1">+{imageUrls.length - 3}</span>
+              <span className="text-xs text-gray-500 ml-1">
+                +{imageUrls.length - 3}
+              </span>
             )}
           </div>
         );
@@ -347,7 +383,7 @@ export default function BookmarksPage() {
       title: "Actions",
       key: "actions",
       width: 120,
-      fixed: 'right',
+      fixed: "right",
       render: (_: string, record: Bookmark) => (
         <div className="flex gap-2">
           <Button
@@ -360,7 +396,7 @@ export default function BookmarksPage() {
             type="text"
             icon={<DeleteOutlined />}
             danger
-            onClick={() => removeBookmark(record.object_id)}
+            onClick={() => showDeleteConfirm(record.object_id)}
             title="Delete bookmark"
           />
         </div>
@@ -371,7 +407,6 @@ export default function BookmarksPage() {
   if (authLoading) {
     return (
       <div className="h-[95vh] flex flex-col overflow-hidden">
-        {contextHolder}
         <AppHeader breadcrumbs={[{ label: "Bookmarks" }]} className="" />
         <div className="flex-1 flex items-center justify-center">
           <Spin size="large" />
@@ -383,12 +418,14 @@ export default function BookmarksPage() {
   if (!user) {
     return (
       <div className="h-[95vh] flex flex-col overflow-hidden">
-        {contextHolder}
         <AppHeader breadcrumbs={[{ label: "Bookmarks" }]} className="" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg mb-4">Please login to view bookmarks</p>
-            <Button type="primary" onClick={() => window.location.href = '/login'}>
+            <Button
+              type="primary"
+              onClick={() => (window.location.href = "/login")}
+            >
               Login
             </Button>
           </div>
@@ -399,9 +436,8 @@ export default function BookmarksPage() {
 
   return (
     <div className="h-[95vh] flex flex-col overflow-hidden">
-      {contextHolder}
       <AppHeader breadcrumbs={[{ label: "Bookmarks" }]} className="" />
-      
+
       <div className="flex-1 overflow-auto px-4 py-2 box-border">
         <Card
           title={
@@ -414,10 +450,7 @@ export default function BookmarksPage() {
                   layout="inline"
                   className="flex items-center"
                 >
-                  <Form.Item
-                    name="remark"
-                    className="mb-0"
-                  >
+                  <Form.Item name="remark" className="mb-0">
                     <Input
                       placeholder="Search by remark"
                       prefix={<SearchOutlined />}
@@ -426,19 +459,15 @@ export default function BookmarksPage() {
                     />
                   </Form.Item>
                   <Form.Item className="mb-0 ml-1">
-                    <Button type="primary" htmlType="submit" loading={searchLoading}>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={searchLoading}
+                    >
                       Search
                     </Button>
                   </Form.Item>
-                  {/* <Form.Item className="mb-0 ml-1">
-                    <Button onClick={handleSearchReset} loading={searchLoading}>
-                      Reset
-                    </Button>
-                  </Form.Item> */}
                 </Form>
-                {/* <Button type="primary" onClick={() => fetchBookmarks(searchRemark)} loading={loading}>
-                  Refresh
-                </Button> */}
               </div>
             </div>
           }
@@ -456,98 +485,79 @@ export default function BookmarksPage() {
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
-                showTotal: (total) => `Total ${total} bookmarks`,
-                position: ['bottomRight']
+                pageSizeOptions: ["10", "20", "50"],
               }}
-              locale={{
-                emptyText: "No bookmarks yet. Add some bookmarks from the Blob Viewer!",
-              }}
-              className="bookmarks-table"
-              size="middle"
+              scroll={{ x: 1200 }}
             />
           )}
         </Card>
       </div>
-      
-      {/* Edit Modal */}
+
       <Modal
-        title="Edit Bookmark"
         open={editModalVisible}
-        onOk={handleEditSubmit}
+        title="Edit Bookmark"
         onCancel={handleEditCancel}
-        confirmLoading={uploadingImages}
-        okText="Save"
-        cancelText="Cancel"
+        footer={[
+          <Button key="back" onClick={handleEditCancel}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={isSubmitLoading}
+            onClick={handleEditSubmit}
+          >
+            Submit
+          </Button>,
+        ]}
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Remark</label>
+        <Form layout="vertical">
+          <Form.Item label="Remark">
             <Input.TextArea
               value={editRemark}
               onChange={(e) => setEditRemark(e.target.value)}
-              placeholder="Enter remark for this bookmark"
-              rows={3}
+              rows={4}
             />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-2">Remark Images</label>
+          </Form.Item>
+          <Form.Item label="Images">
             <Upload
-              accept="image/*"
-              multiple
+              listType="picture-card"
+              fileList={editImages.map((url, index) => ({
+                uid: `${-index}`,
+                name: `image-${index}.png`,
+                status: "done",
+                url,
+              }))}
               beforeUpload={handleImageUpload}
-              showUploadList={false}
-              disabled={uploadingImages}
+              onRemove={(file) => {
+                const index = editImages.findIndex((url) => url === file.url);
+                if (index > -1) {
+                  removeImage(index);
+                }
+              }}
+              onPreview={(file) => showImagePreview(file.url || "")}
             >
-              <Button icon={<UploadOutlined />} loading={uploadingImages}>
-                Upload Image (Max 2MB)
-              </Button>
-            </Upload>
-            
-            {editImages.length > 0 && (
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {editImages.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={image}
-                      alt={`Remark image ${index + 1}`}
-                      className="w-full h-20 object-cover rounded"
-                    />
-                    <Button
-                      type="text"
-                      danger
-                      size="small"
-                      className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(index)}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                ))}
+              <div>
+                <UploadOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
               </div>
-            )}
-          </div>
-        </div>
+            </Upload>
+            {uploadingImages && <Spin />}
+          </Form.Item>
+        </Form>
       </Modal>
 
-      {/* Image Preview Modal */}
       <Modal
-        title="Image Preview"
         open={previewVisible}
-        onCancel={hideImagePreview}
+        title="Image Preview"
         footer={null}
-        width={800}
-        centered
+        onCancel={hideImagePreview}
       >
-        {previewImage && (
-          <div className="flex justify-center items-center min-h-[400px]">
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="max-w-full max-h-[600px] object-contain rounded"
-            />
-          </div>
-        )}
+        <img
+          alt="Preview"
+          style={{ width: "100%", marginTop: "20px" }}
+          src={previewImage || ""}
+        />
       </Modal>
     </div>
   );

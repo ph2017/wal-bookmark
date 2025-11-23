@@ -19,6 +19,7 @@ import { ThemeProvider } from "next-themes";
 import { notFound } from "next/navigation";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { AntdConfigProvider } from "@/components/provider/antd-config-provider";
+import { App } from 'antd';
 
 type MetadataProps = {
   params: Promise<{ locale: string }>;
@@ -82,7 +83,7 @@ export default async function LocaleLayout({
                 header={<Header />}
                 footer={<Footer />}
               >
-                {children}
+                <App>{children}</App>
               </ConditionalLayout>
             </AntdConfigProvider>
           </ThemeProvider>
