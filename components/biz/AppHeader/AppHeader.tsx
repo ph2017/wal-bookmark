@@ -1,6 +1,6 @@
-'use client'
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
+"use client";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import {
   Breadcrumb,
   BreadcrumbPage,
@@ -8,12 +8,12 @@ import {
   BreadcrumbList,
   BreadcrumbLink,
   BreadcrumbItem,
-} from "@/components/ui/breadcrumb"
-import type { AppHeaderProps } from "./interface"
-import React from "react"
-import Link from "next/link"
-import { ConnectButton } from "@mysten/dapp-kit"
-import { NetworkSelector } from "@/components/biz/NetworkSelector"
+} from "@/components/ui/breadcrumb";
+import type { AppHeaderProps } from "./interface";
+import React from "react";
+import Link from "next/link";
+import { ConnectButton } from "@mysten/dapp-kit";
+import { NetworkSelector } from "@/components/biz/NetworkSelector";
 
 export function AppHeader({
   className,
@@ -22,7 +22,9 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className={`flex h-16 shrink-0 items-center gap-2 ${className || ""} justify-between`}
+      className={`flex h-16 shrink-0 items-center gap-2 ${
+        className || ""
+      } justify-between`}
     >
       <div className="flex items-center gap-2 px-4">
         {showSidebarTrigger && (
@@ -56,21 +58,19 @@ export function AppHeader({
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      
+
       <div className="flex items-center gap-2 px-4">
         <NetworkSelector className="bg-gray-100 dark:bg-gray-800" />
-        <ConnectButton 
-          style={{ 
-            backgroundColor: '#8b5cf6', 
-            color: 'white', 
-            borderRadius: '0.5rem',
-            padding: '0.5rem 1rem',
-            opacity: 0.9,
-            transition: 'opacity 0.2s'
-          }}
-          className="hover:opacity-100"
-        />
+        <div className="connect-button-wrapper">
+          <ConnectButton
+            style={{
+              height: "36px",
+              color: "white",
+              backgroundColor: "#8b5cf6",
+            }}
+          />
+        </div>
       </div>
     </header>
-  )
+  );
 }

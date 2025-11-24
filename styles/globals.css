@@ -114,3 +114,11 @@ html {
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   }
 }
+
+/* Custom styles for the ConnectButton */
+.connect-button-wrapper [data-testid="connect-button"],
+.connect-button-wrapper .AccountDropdownMenu_connectedAccount__div2ql0 {
+  height: 36px !important;
+  border-radius: 0.5rem !important;
+}
+

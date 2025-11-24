@@ -10,7 +10,7 @@ import {
   Input,
   Upload,
   Form,
-  App,
+  message,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -42,7 +42,9 @@ interface Bookmark {
 export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [loading, setLoading] = useState(false);
-  const { message: messageApi, modal } = App.useApp();
+  // const { message: messageApi, modal } = App.useApp();
+  const [modal, modalContextHolder] = Modal.useModal();
+  const [messageApi, messageContextHolder] = message.useMessage();
   const { user, loading: authLoading } = useAuth();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
@@ -174,6 +176,15 @@ export default function BookmarksPage() {
   };
 
   const showDeleteConfirm = (objectId: string) => {
+    // modal.confirm({
+    //   title: "Are you sure you want to delete this bookmark?",
+    //   icon: <DeleteOutlined />,
+    //   content: "This action cannot be undone.",
+    //   okText: "Delete",
+    //   okType: "danger",
+    //   cancelText: "Cancel",
+    //   onOk: () => removeBookmark(objectId),
+    // });
     modal.confirm({
       title: "Are you sure you want to delete this bookmark?",
       icon: <DeleteOutlined />,
@@ -296,7 +307,6 @@ export default function BookmarksPage() {
       title: "Object ID",
       dataIndex: "object_id",
       key: "object_id",
-      width: 160,
       ellipsis: true,
       render: (text: string, record: Bookmark) => (
         <AddressDisplay address={text} network={record.net_type || "testnet"} />
@@ -320,14 +330,12 @@ export default function BookmarksPage() {
       title: "End Time",
       dataIndex: "endTime",
       key: "endTime",
-      width: 120,
       render: (text?: number) => text,
     },
     {
       title: "Remark",
       dataIndex: "remark",
       key: "remark",
-      width: 120,
       render: (text?: number) => (
         <Tooltip title={text}>
           <div className="text-ellipsis whitespace-nowrap overflow-hidden max-w-[120px]">
@@ -340,7 +348,6 @@ export default function BookmarksPage() {
       title: "Remark Images",
       dataIndex: "remark_images",
       key: "remark_images",
-      width: 120,
       render: (text?: string) => {
         if (!text) return null;
 
@@ -372,7 +379,6 @@ export default function BookmarksPage() {
       title: "Created",
       dataIndex: "created_at",
       key: "created_at",
-      width: 150,
       render: (text: string) => (
         <Tooltip title={new Date(text).toLocaleString()}>
           {formatDistanceToNow(new Date(text), { addSuffix: true })}
@@ -473,23 +479,20 @@ export default function BookmarksPage() {
           }
           className="h-full flex flex-col"
         >
-          {loading ? (
-            <div className="text-center py-8">
-              <Spin size="large" />
-            </div>
-          ) : (
+           
             <Table
               columns={columns}
               dataSource={bookmarks}
               rowKey="id"
+              loading={loading}
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
                 pageSizeOptions: ["10", "20", "50"],
               }}
-              scroll={{ x: 1200 }}
+              scroll={{ x: true }}
             />
-          )}
+          
         </Card>
       </div>
 
@@ -559,6 +562,8 @@ export default function BookmarksPage() {
           src={previewImage || ""}
         />
       </Modal>
+      {modalContextHolder}
+      {messageContextHolder}
     </div>
   );
 }
