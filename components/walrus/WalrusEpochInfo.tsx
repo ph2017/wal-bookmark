@@ -211,13 +211,13 @@ export function WalrusEpochInfo({ onEpochChange, onNetworkChange }: WalrusEpochI
         </div>
       </CardHeader>
       <CardContent>
-        <Descriptions bordered column={4} size="middle">
+        <Descriptions bordered column={3} size="middle">
           <Descriptions.Item label="Current Epoch">
             <Badge variant="outline">{epochInfo.currentEpoch}</Badge>
           </Descriptions.Item>
-          <Descriptions.Item label="Total Shards">
+          {/* <Descriptions.Item label="Total Shards">
             <Badge variant="outline">{epochInfo.totalShards}</Badge>
-          </Descriptions.Item>
+          </Descriptions.Item> */}
           <Descriptions.Item label="Epoch Duration">
             <Badge variant="outline">
               {networkConfig.type === 'testnet' 

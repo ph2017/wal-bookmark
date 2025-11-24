@@ -10,6 +10,8 @@ interface AddressDisplayProps {
   network: "testnet" | "mainnet" | "devnet" | "localnet";
   isAccount?: boolean;
   isBlobId?: boolean;
+  frontDisplayLength?: number;
+  endDisplayLength?: number;
 }
 
 export function AddressDisplay({
@@ -17,11 +19,13 @@ export function AddressDisplay({
   network,
   isAccount,
   isBlobId,
+  frontDisplayLength = 12,
+  endDisplayLength = 14,
 }: AddressDisplayProps) {
   const [isCopied, setIsCopied] = useState(false);
 
   console.log('address', address);
-  let formattedAddress = `${address?.slice(0, 12) || ''}...${address?.slice(-14) || ''}`;
+  let formattedAddress = `${address?.slice(0, frontDisplayLength) || ''}...${address?.slice(-endDisplayLength) || ''}`;
   if (isBlobId) {
     formattedAddress = `${address?.slice(0, 5) || ''}...${address?.slice(-5) || ''}`;
   }

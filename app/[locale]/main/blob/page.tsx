@@ -8,7 +8,7 @@ import {
   Descriptions,
   Form,
   Input,
-  Spin,
+  Skeleton,
   Tag,
   Tooltip,
   App,
@@ -233,15 +233,17 @@ function BlobPageContent() {
         </Card>
 
         {loading && (
-          <div className="text-center mt-4">
-            <Spin size="large" />
+          <div className="mt-4 space-y-3">
+            <Skeleton.Input active size="large" className="!w-full !h-10" />
+            <Skeleton.Input active size="large" className="!w-full !h-10" />
+            <Skeleton.Input active size="large" className="!w-full !h-10" />
           </div>
         )}
 
-        {blobData && (
+        {blobData && !loading && (
           <AntdCard className="mt-4" title="Blob Object Details">
             <Descriptions bordered column={2}>
-              <Descriptions.Item label="Object ID">
+              <Descriptions.Item label="Object ID" span={2}>
                 <div className="flex items-center gap-2">
                   <AddressDisplay address={blobData.objectId || ''} network={currentNetwork} />
                   {!isBookmarked && (
@@ -264,14 +266,14 @@ function BlobPageContent() {
                   )}
                 </div>
               </Descriptions.Item>
-              <Descriptions.Item label="Owner">
+              <Descriptions.Item label="Owner" span={2}>
                 {blobData.owner ? (
-                  <AddressDisplay address={blobData.owner?.AddressOwner || ''} network={currentNetwork} />
+                  <AddressDisplay address={blobData.owner?.AddressOwner || ''} network={currentNetwork}/>
                 ) : (
                   <span className="text-gray-500">Unknown</span>
                 )}
               </Descriptions.Item>
-              <Descriptions.Item label="Type">
+              <Descriptions.Item label="Type" span={2}>
                 <Tag color="blue">{blobData.content?.type}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Size">
