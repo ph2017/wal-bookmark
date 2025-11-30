@@ -11,13 +11,17 @@ import {
   Upload,
   Form,
   message,
+  Tag,
 } from "antd";
+import { Badge } from "@/components/ui/badge";
 import type { ColumnsType } from "antd/es/table";
 import {
   DeleteOutlined,
   EditOutlined,
   UploadOutlined,
   SearchOutlined,
+  TagOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -37,6 +41,19 @@ interface Bookmark {
   remark?: string;
   remark_images?: string;
   net_type?: "testnet" | "mainnet";
+  isSubscribed?: boolean;
+  subscribeId?: number;
+}
+
+interface Subscription {
+  id: number;
+  bookmark_id: number;
+  user_id: string;
+  user_email: string;
+  advance_day: number;
+  end_time: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 export default function BookmarksPage() {
@@ -55,10 +72,10 @@ export default function BookmarksPage() {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  const calculateEndTime = (
+  const calculateEndTime = async (
     endEpoch: number,
     network: "testnet" | "mainnet" | undefined
-  ): string => {
+  ): Promise<string> => {
     if (!endEpoch) return "N/A";
 
     const NETWORK_CONFIGS = {
@@ -84,13 +101,30 @@ export default function BookmarksPage() {
     const config = NETWORK_CONFIGS[currentNetwork];
 
     if (currentNetwork === "testnet") {
-      const currentTime = Math.floor(Date.now() / 1000);
-      const currentEpochStartTime =
-        currentTime - (currentTime % config.epochDuration);
-      const targetEpochStartTime =
-        currentEpochStartTime + (endEpoch - 1) * config.epochDuration;
-      const endTime = new Date(targetEpochStartTime * 1000);
-      return endTime.toISOString().replace("T", " ").slice(0, -5) + " UTC";
+      try {
+        // 获取当前epoch信息
+        const { getCurrentEpoch } = await import("@/lib/walrus-epochs");
+        const currentEpoch = await getCurrentEpoch("testnet");
+
+        const currentTime = Math.floor(Date.now() / 1000);
+        const currentEpochStartTime =
+          currentTime - (currentTime % config.epochDuration);
+        const targetEpochStartTime =
+          currentEpochStartTime +
+          (endEpoch - currentEpoch) * config.epochDuration;
+        const endTime = new Date(targetEpochStartTime * 1000);
+        return endTime.toISOString().replace("T", " ").slice(0, -5) + " UTC";
+      } catch (error) {
+        console.error("获取当前epoch失败:", error);
+        // 如果获取失败，使用备用计算方法
+        const currentTime = Math.floor(Date.now() / 1000);
+        const currentEpochStartTime =
+          currentTime - (currentTime % config.epochDuration);
+        const targetEpochStartTime =
+          currentEpochStartTime + (endEpoch - 1) * config.epochDuration;
+        const endTime = new Date(targetEpochStartTime * 1000);
+        return endTime.toISOString().replace("T", " ").slice(0, -5) + " UTC";
+      }
     } else {
       const epochsSinceStart = endEpoch - 1;
       const epochStartTime =
@@ -125,12 +159,83 @@ export default function BookmarksPage() {
         const result = await response.json();
 
         if (result.success && result.data && Array.isArray(result.data.data)) {
-          setBookmarks(
-            result.data.data.map((item: Bookmark) => ({
+          const bookmarksWithEndTime = await Promise.all(
+            result.data.data.map(async (item: Bookmark) => ({
               ...item,
-              endTime: calculateEndTime(item.end_epoch || 0, item.net_type),
+              endTime: await calculateEndTime(
+                item.end_epoch || 0,
+                item.net_type
+              ),
             }))
           );
+
+          // 批量检查订阅状态
+          if (bookmarksWithEndTime.length > 0) {
+            try {
+              const bookmarkIds = bookmarksWithEndTime
+                .map((item) => item.id)
+                .join(",");
+              const subscribeResponse = await fetch(
+                `/api/subscribe?bookmark_ids=${bookmarkIds}`
+              );
+
+              if (subscribeResponse.ok) {
+                const subscribeResult = await subscribeResponse.json();
+
+                if (subscribeResult.success && subscribeResult.data) {
+                  // 创建订阅状态的映射
+                  const subscribedBookmarkIds = new Set(
+                    subscribeResult.data.map(
+                      (sub: Subscription) => sub.bookmark_id
+                    )
+                  );
+
+                  // 更新书签的订阅状态
+                  const bookmarksWithSubscription = bookmarksWithEndTime.map(
+                    (item) => ({
+                      ...item,
+                      isSubscribed: subscribedBookmarkIds.has(item.id),
+                      subscribeId: subscribeResult.data.find(
+                        (sub: Subscription) => sub.bookmark_id === item.id
+                      )?.id,
+                    })
+                  );
+
+                  setBookmarks(bookmarksWithSubscription);
+                } else {
+                  // 如果订阅检查失败，默认设置为未订阅
+                  const bookmarksWithSubscription = bookmarksWithEndTime.map(
+                    (item) => ({
+                      ...item,
+                      isSubscribed: false,
+                    })
+                  );
+                  setBookmarks(bookmarksWithSubscription);
+                }
+              } else {
+                // 如果订阅检查失败，默认设置为未订阅
+                const bookmarksWithSubscription = bookmarksWithEndTime.map(
+                  (item) => ({
+                    ...item,
+                    isSubscribed: false,
+                  })
+                );
+                setBookmarks(bookmarksWithSubscription);
+              }
+            } catch (subscribeError) {
+              console.error("批量检查订阅状态失败:", subscribeError);
+              // 如果订阅检查失败，默认设置为未订阅
+              const bookmarksWithSubscription = bookmarksWithEndTime.map(
+                (item) => ({
+                  ...item,
+                  isSubscribed: false,
+                })
+              );
+              setBookmarks(bookmarksWithSubscription);
+            }
+          } else {
+            setBookmarks(bookmarksWithEndTime);
+          }
         } else {
           console.error("Invalid API response structure:", result);
           setBookmarks([]);
@@ -294,6 +399,78 @@ export default function BookmarksPage() {
     setPreviewVisible(false);
   };
 
+  const showSubscribeModal = (bookmark: Bookmark) => {
+    const handleSubscribeSubmit = async (confirmPromise: {
+      update: (config: { okButtonProps?: { loading?: boolean } }) => void;
+    }) => {
+      try {
+        setIsSubmitLoading(true);
+        confirmPromise.update({
+          okButtonProps: {
+            loading: true,
+          },
+        });
+        let response = null;
+        if (bookmark.isSubscribed) {
+          response = await fetch(`/api/subscribe?id=${bookmark.subscribeId}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+        } else {
+          response = await fetch("/api/subscribe", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookmark_id: bookmark.id,
+              user_id: user?.id,
+              user_email: user?.email,
+              advance_day: 3,
+              end_time: await calculateEndTime(
+                bookmark.end_epoch || 0,
+                bookmark.net_type || "testnet"
+              ),
+            }),
+          });
+        }
+
+        if (!response.ok) {
+          if (bookmark.isSubscribed) {
+            throw new Error("Failed to unsubscribe");
+          } else {
+            throw new Error("Failed to subscribe");
+          } 
+        }
+
+        messageApi.success(bookmark.isSubscribed ? "Unsubscribed successfully" : "Subscribed successfully");
+        fetchBookmarks();
+      } catch {
+        messageApi.error(bookmark.isSubscribed ? "Failed to unsubscribe" : "Failed to subscribe");
+      } finally {
+        setIsSubmitLoading(false);
+      }
+    };
+
+    const content = bookmark.isSubscribed
+      ? "Are you sure you want to unsubscribe?"
+      : "After subscribing, you will receive an email notification 3 days before the blob file expires. Do you want to continue?";
+    const confirmPromise = modal.confirm({
+      title: "Subscribe end time",
+      icon: <TagOutlined />,
+      content,
+      okText: bookmark.isSubscribed ? "Unsubscribe" : "Subscribe",
+      okType: "primary",
+      cancelText: "Cancel",
+      okButtonProps: {
+        loading: isSubmitLoading,
+      },
+      onOk: () => handleSubscribeSubmit(confirmPromise),
+    });
+  };
+
   const userRef = useRef(user);
   useEffect(() => {
     if (user && user.id !== userRef.current?.id) {
@@ -309,7 +486,18 @@ export default function BookmarksPage() {
       key: "object_id",
       ellipsis: true,
       render: (text: string, record: Bookmark) => (
-        <AddressDisplay address={text} network={record.net_type || "testnet"} />
+        <div>
+          <Badge
+            variant={record.net_type === "mainnet" ? "default" : "secondary"}
+            className="text-xs"
+          >
+            {record.net_type === "mainnet" ? "Mainnet" : "Testnet"}
+          </Badge>
+          <AddressDisplay
+            address={text}
+            network={record.net_type || "testnet"}
+          />
+        </div>
       ),
     },
     {
@@ -330,7 +518,23 @@ export default function BookmarksPage() {
       title: "End Time",
       dataIndex: "endTime",
       key: "endTime",
-      render: (text?: number) => text,
+      render: (text?: number) => (
+        <div>
+          {text}
+          <Tag
+            color={
+              text && new Date(text).getTime() > new Date().getTime()
+                ? "green"
+                : "red"
+            }
+            className="ml-2"
+          >
+            {text && new Date(text).getTime() < new Date().getTime()
+              ? "Expired"
+              : "Valid"}
+          </Tag>
+        </div>
+      ),
     },
     {
       title: "Remark",
@@ -385,6 +589,26 @@ export default function BookmarksPage() {
         </Tooltip>
       ),
     },
+    // {
+    //   title: "Subscription",
+    //   key: "subscription",
+    //   width: 100,
+    //   render: (_: string, record: Bookmark) => (
+    //     <div className="text-center">
+    //       {record.isSubscribed ? (
+    //         <Tooltip title="You are subscribed to this bookmark">
+    //           <Tag color="green" icon={<CheckCircleOutlined />}>
+    //             Subscribed
+    //           </Tag>
+    //         </Tooltip>
+    //       ) : (
+    //         <Tooltip title="Click the tag icon to subscribe">
+    //           <Tag color="default">Not Subscribed</Tag>
+    //         </Tooltip>
+    //       )}
+    //     </div>
+    //   ),
+    // },
     {
       title: "Actions",
       key: "actions",
@@ -398,6 +622,26 @@ export default function BookmarksPage() {
             onClick={() => showEditModal(record)}
             title="Edit bookmark"
           />
+
+          <Tooltip
+            title={
+              record.isSubscribed
+                ? "You are subscribed to this bookmark, click to unsubscribe"
+                : "Click the tag icon to subscribe"
+            }
+            className="relative"
+          >
+            <Button
+              type="text"
+              icon={<TagOutlined />}
+              onClick={() => showSubscribeModal(record)}
+              title="Subscribe end time"
+            />
+            {record.isSubscribed && (
+              // <AntdIcon.CheckCircle className="absolute top-0 right-0 text-green-500" />
+              <CheckCircleOutlined className="absolute top-0 right-0 text-green-500" />
+            )}
+          </Tooltip>
           <Button
             type="text"
             icon={<DeleteOutlined />}
@@ -479,20 +723,18 @@ export default function BookmarksPage() {
           }
           className="h-full flex flex-col"
         >
-           
-            <Table
-              columns={columns}
-              dataSource={bookmarks}
-              rowKey="id"
-              loading={loading}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                pageSizeOptions: ["10", "20", "50"],
-              }}
-              scroll={{ x: true }}
-            />
-          
+          <Table
+            columns={columns}
+            dataSource={bookmarks}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50"],
+            }}
+            scroll={{ x: true }}
+          />
         </Card>
       </div>
 
