@@ -11,7 +11,6 @@ import { constructMetadata } from "@/lib/metadata";
 import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
 import "@/styles/loading.css";
-import { Analytics } from "@vercel/analytics/react";
 import { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -19,6 +18,7 @@ import { ThemeProvider } from "next-themes";
 import { notFound } from "next/navigation";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { AntdConfigProvider } from "@/components/provider/antd-config-provider";
+import { Analytics } from "@vercel/analytics/next"
 // import { App } from 'antd';
 
 type MetadataProps = {
