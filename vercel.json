@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "app/api/email/route.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
+  "env": {
+    "EMAIL_PROVIDER": "@email_provider",
+    "GMAIL_USER": "@gmail_user",
+    "GMAIL_APP_PASSWORD": "@gmail_app_password",
+    "RESEND_API_KEY": "@resend_api_key",
+    "ADMIN_EMAIL": "@admin_email"
+  }
+}

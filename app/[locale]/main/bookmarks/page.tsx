@@ -419,6 +419,10 @@ export default function BookmarksPage() {
             },
           });
         } else {
+          const endTime = await calculateEndTime(
+            bookmark.end_epoch || 0,
+            bookmark.net_type || "testnet"
+          );
           response = await fetch("/api/subscribe", {
             method: "POST",
             headers: {
@@ -429,10 +433,7 @@ export default function BookmarksPage() {
               user_id: user?.id,
               user_email: user?.email,
               advance_day: 3,
-              end_time: await calculateEndTime(
-                bookmark.end_epoch || 0,
-                bookmark.net_type || "testnet"
-              ),
+              end_time: new Date(endTime),
             }),
           });
         }

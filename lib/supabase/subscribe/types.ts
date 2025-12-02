@@ -8,6 +8,7 @@ export interface Subscribe {
   advance_day: number
   end_time: string
   created_at: string
+  is_expired: boolean
 }
 
 // 创建订阅时的输入类型
