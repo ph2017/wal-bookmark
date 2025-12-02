@@ -25,4 +25,4 @@ pnpm build
 
 - [x] Search for Sui objects and add them to bookmarks
 - [ ] Add Walrus blob object operations, such as extending validity, downloading, and deleting
-- [ ] Add subscription for Walrus blob object expiration time, with email notifications for expiring blobs
+- [x] Add subscription for Walrus blob object expiration time, with email notifications for expiring blobs
