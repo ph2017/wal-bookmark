@@ -8,6 +8,7 @@ import {
   Tooltip,
   Modal,
   Input,
+  InputNumber,
   Upload,
   Form,
   message,
@@ -22,12 +23,22 @@ import {
   SearchOutlined,
   TagOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
+  PlusSquareOutlined
 } from "@ant-design/icons";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { AddressDisplay } from "@/components/biz/AddressDisplay";
 import { createClient } from "@/utils/supbase/client";
+import { useSignAndExecuteTransaction, useCurrentAccount } from "@mysten/dapp-kit";
+import { SuiClient } from "@mysten/sui/client";
+import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
+import {
+  WalrusClient,
+  TESTNET_WALRUS_PACKAGE_CONFIG,
+  MAINNET_WALRUS_PACKAGE_CONFIG,
+} from "@mysten/walrus";
 
 interface Bookmark {
   id: number;
@@ -71,6 +82,13 @@ export default function BookmarksPage() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const currentAccount = useCurrentAccount();
+  const [extendModalVisible, setExtendModalVisible] = useState(false);
+  const [extendingBookmark, setExtendingBookmark] = useState<Bookmark | null>(null);
+  const [extendEpochs, setExtendEpochs] = useState(1);
+  const [extending, setExtending] = useState(false);
 
   const calculateEndTime = async (
     endEpoch: number,
@@ -480,6 +498,158 @@ export default function BookmarksPage() {
     }
   }, [user, fetchBookmarks]);
 
+  const handleExtend = (bookmark: Bookmark) => {
+    setExtendingBookmark(bookmark);
+    setExtendEpochs(1);
+    setExtendModalVisible(true);
+  };
+
+  const handleExtendSubmit = async () => {
+    if (!extendingBookmark || !extendingBookmark.object_id) return;
+
+    if (!currentAccount) {
+      messageApi.error("Please connect your wallet first");
+      return;
+    }
+
+    try {
+      setExtending(true);
+      
+      const network = extendingBookmark.net_type || "testnet";
+      const packageConfig = network === "mainnet" 
+        ? MAINNET_WALRUS_PACKAGE_CONFIG 
+        : TESTNET_WALRUS_PACKAGE_CONFIG;
+      
+      const suiRpcUrl = network === "mainnet"
+        ? "https://fullnode.mainnet.sui.io:443"
+        : "https://fullnode.testnet.sui.io:443";
+
+      const client = new WalrusClient({
+        packageConfig,
+        suiRpcUrl,
+      });
+
+      // Fetch Blob Object to get size
+      const rpc = new SuiClient({ url: suiRpcUrl });
+      const blobObj = await rpc.getObject({
+        id: extendingBookmark.object_id,
+        options: { showContent: true }
+      });
+      
+      if (blobObj.error || !blobObj.data || !blobObj.data.content) {
+        throw new Error("Failed to fetch blob object");
+      }
+      
+      const content = blobObj.data.content as any;
+      const storage = content.fields.storage;
+      const storageSize = Number(storage.fields.storage_size);
+      
+      // Calculate Cost
+      const { storageCost } = await client.storageCost(storageSize, extendEpochs);
+      
+      // Get Package ID from System Object
+      const systemObj = await client.systemObject();
+      const packageId = systemObj.package_id;
+      // const walType = `${packageId}::wal::WAL`;
+      const walPackageId = network === "mainnet"
+        ? process.env.NEXT_PUBLIC_WAL_COIN_PACKAGE_ID_MAIN
+        : process.env.NEXT_PUBLIC_WAL_COIN_PACKAGE_ID_TEST;
+      const walType = `${walPackageId}::wal::WAL`
+      
+      // Build Transaction
+      const tx = new Transaction();
+      tx.setSender(currentAccount.address);
+      
+      // Create a WAL coin with exact balance
+      const paymentCoin = tx.add(
+        coinWithBalance({
+          balance: storageCost,
+          type: walType,
+        })
+      );
+      
+      // Call extend_blob
+      tx.moveCall({
+        target: `${packageId}::system::extend_blob`,
+        arguments: [
+          tx.object(packageConfig.systemObjectId),
+          tx.object(extendingBookmark.object_id),
+          tx.pure.u32(extendEpochs),
+          paymentCoin
+        ]
+      });
+      
+      // Transfer the coin back to sender (in case extend_blob didn't consume it fully or returns it)
+      // Note: if extend_blob consumes it, this might fail or be ignored.
+      // But since the previous error was destroy_zero failing, it means the coin WAS NOT fully consumed.
+      // So we transfer it back.
+      tx.transferObjects([paymentCoin], currentAccount.address);
+
+      signAndExecuteTransaction(
+        {
+          transaction: tx as any,
+        },
+        {
+          onSuccess: async (result) => {
+            messageApi.success(`Successfully extended blob validity by ${extendEpochs} epochs`);
+            
+            try {
+              // Wait 3 seconds for the chain to update
+              await new Promise((resolve) => setTimeout(resolve, 3000));
+
+              // Get updated object to sync with DB
+              const updatedBlobObj = await rpc.getObject({
+                id: extendingBookmark.object_id,
+                options: { showContent: true }
+              });
+
+              if (updatedBlobObj.data?.content) {
+                const content = updatedBlobObj.data.content as any;
+                // Verify structure and extract end_epoch
+                const storage = content.fields.storage;
+                if (storage && storage.fields && storage.fields.end_epoch) {
+                  const newEndEpoch = Number(storage.fields.end_epoch);
+                  
+                  // Update bookmark in DB
+                  await fetch("/api/bookmark", {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      id: extendingBookmark.id,
+                      object_id: extendingBookmark.object_id,
+                      endEpoch: newEndEpoch,
+                    }),
+                  });
+                }
+              }
+            } catch (err) {
+              console.error("Failed to sync bookmark update:", err);
+            } finally {
+              setExtending(false);
+            }
+
+            setExtendModalVisible(false);
+            setExtendingBookmark(null);
+            fetchBookmarks();
+          },
+          onError: (error) => {
+            console.error("Transaction failed:", error);
+            messageApi.error(`Transaction failed: ${error.message}`);
+            setExtending(false);
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error("Failed to extend blob:", error);
+      messageApi.error(`Failed to extend blob: ${error.message}`);
+      setExtending(false);
+    } finally {
+      
+    }
+  };
+
   const columns: ColumnsType<Bookmark> = [
     {
       title: "Object ID",
@@ -623,7 +793,6 @@ export default function BookmarksPage() {
             onClick={() => showEditModal(record)}
             title="Edit bookmark"
           />
-
           <Tooltip
             title={
               record.isSubscribed
@@ -642,6 +811,17 @@ export default function BookmarksPage() {
               // <AntdIcon.CheckCircle className="absolute top-0 right-0 text-green-500" />
               <CheckCircleOutlined className="absolute top-0 right-0 text-green-500" />
             )}
+          </Tooltip>
+          <Tooltip
+            title="Extend blob end epoch"
+            className="relative"
+          >
+            <Button
+              type="text"
+              icon={<PlusSquareOutlined />}
+              onClick={() => handleExtend(record)}
+              title="Subscribe end time"
+            />
           </Tooltip>
           <Button
             type="text"
@@ -804,6 +984,53 @@ export default function BookmarksPage() {
           style={{ width: "100%", marginTop: "20px" }}
           src={previewImage || ""}
         />
+      </Modal>
+
+      <Modal
+        open={extendModalVisible}
+        title="Extend Blob Validity"
+        onCancel={() => {
+          setExtendModalVisible(false);
+          setExtendingBookmark(null);
+        }}
+        footer={[
+          <Button key="back" onClick={() => {
+            setExtendModalVisible(false);
+            setExtendingBookmark(null);
+          }}
+            disabled={extending}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={extending}
+            onClick={handleExtendSubmit}
+          >
+            Confirm
+          </Button>,
+        ]}
+      >
+        <div className="py-4">
+          <p className="mb-4 text-gray-600">
+            Extend the validity of blob: <span className="font-mono text-xs bg-gray-100 p-1 rounded">{extendingBookmark?.object_id}</span>
+          </p>
+          <Form layout="vertical">
+            <Form.Item label="Extension Epochs (1-53)" required>
+              <InputNumber
+                min={1}
+                max={53}
+                value={extendEpochs}
+                onChange={(value) => setExtendEpochs(value || 1)}
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Specify how many epochs to extend the blob's validity. One epoch is approximately 1 day.
+              </p>
+            </Form.Item>
+          </Form>
+        </div>
       </Modal>
       {modalContextHolder}
       {messageContextHolder}

@@ -207,7 +207,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { remark, remark_images, object_id, id } = body
+    const { remark, remark_images, object_id, id, endEpoch: end_epoch } = body
 
     if (!object_id || !id) {
       return NextResponse.json(
@@ -219,6 +219,7 @@ export async function PUT(request: NextRequest) {
     const result = await updateBookmark(id, user.id || '',{
       remark,
       remark_images,
+      end_epoch,
     })
 
     if (!result.success) {
