@@ -24,5 +24,5 @@ pnpm build
 ## Features Roadmap
 
 - [x] Search for Sui objects and add them to bookmarks
-- [ ] Add Walrus blob object operations, such as extending validity, downloading, and deleting
+- [x] Add Walrus blob object operations, such as extending validity, downloading, and deleting
 - [x] Add subscription for Walrus blob object expiration time, with email notifications for expiring blobs
