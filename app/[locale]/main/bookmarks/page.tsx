@@ -23,7 +23,6 @@ import {
   SearchOutlined,
   TagOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   PlusSquareOutlined
 } from "@ant-design/icons";
 import { useEffect, useRef, useState, useCallback } from "react";
